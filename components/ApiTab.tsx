@@ -21,8 +21,90 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("取得中...");
   const [maxRequests, setMaxRequests] = useState(15);
+  const [currentCount, setCurrentCount] = useState(0);
+  const [currentRequest, setCurrentRequest] = useState(0);
+  const [waitTime, setWaitTime] = useState(0);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [clientWaitTime, setClientWaitTime] = useState(0); // クライアントサイドのカウントダウン用
 
-  const handleFetch = async () => {
+  // 待機時間のカウントダウン
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+
+    console.log(
+      "[COUNTDOWN] useEffect triggered, isWaiting:",
+      isWaiting,
+      "clientWaitTime:",
+      clientWaitTime
+    );
+
+    if (isWaiting && clientWaitTime > 0) {
+      console.log("[COUNTDOWN] Starting countdown interval");
+      interval = setInterval(() => {
+        setClientWaitTime((prev) => {
+          const newTime = Math.max(0, prev - 1000);
+          console.log("[COUNTDOWN] Updated time:", prev, "->", newTime);
+          if (newTime === 0) {
+            console.log(
+              "[COUNTDOWN] Countdown finished, setting isWaiting to false"
+            );
+            setIsWaiting(false);
+          }
+          return newTime;
+        });
+      }, 1000);
+    } else {
+      console.log(
+        "[COUNTDOWN] Not starting countdown - isWaiting:",
+        isWaiting,
+        "clientWaitTime:",
+        clientWaitTime
+      );
+    }
+
+    return () => {
+      if (interval) {
+        console.log("[COUNTDOWN] Clearing interval");
+        clearInterval(interval);
+      }
+    };
+  }, [isWaiting]); // clientWaitTime を依存配列から除外
+
+  // デバッグ: 状態変化を監視
+  React.useEffect(() => {
+    console.log("[STATE] loadingMessage changed to:", loadingMessage);
+  }, [loadingMessage]);
+
+  React.useEffect(() => {
+    console.log("[STATE] currentCount changed to:", currentCount);
+  }, [currentCount]);
+
+  React.useEffect(() => {
+    console.log("[STATE] currentRequest changed to:", currentRequest);
+  }, [currentRequest]);
+
+  React.useEffect(() => {
+    console.log("[STATE] isLoading changed to:", isLoading);
+  }, [isLoading]);
+
+  React.useEffect(() => {
+    console.log("[STATE] isWaiting changed to:", isWaiting);
+  }, [isWaiting]);
+
+  React.useEffect(() => {
+    console.log("[STATE] clientWaitTime changed to:", clientWaitTime);
+  }, [clientWaitTime]);
+
+  const resetProgress = () => {
+    setCurrentCount(0);
+    setCurrentRequest(0);
+    setWaitTime(0);
+    setIsWaiting(false);
+  };
+
+  const handleFetchWithEventSource = async () => {
+    console.log("handleFetchWithEventSource called");
+
     if (!bearerToken.trim() || !listId.trim()) {
       toaster.create({
         title: "入力エラー",
@@ -34,57 +116,310 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
     }
 
     setIsLoading(true);
-    setLoadingMessage("メンバー取得を開始中...");
+    setCurrentCount(0);
+    setCurrentRequest(0);
+    setWaitTime(0);
+    setIsWaiting(false);
+    setLoadingMessage("初期化中...");
+    console.log("Loading started with EventSource");
+
+    let isCompleted = false; // 完了フラグを追加
 
     try {
-      // タイムアウトを設定（15分に延長）
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000);
+      // EventSource を使用してSSE接続
+      const params = new URLSearchParams({
+        bearerToken: bearerToken.trim(),
+        listId: listId.trim(),
+        maxRequests: maxRequests.toString(),
+      });
 
-      setLoadingMessage(
-        `メンバー取得中... (最大${maxRequests * 100}人まで取得)`
-      );
+      const eventSourceUrl = `/api/twitter-api-stream?${params.toString()}`;
+      console.log("EventSource URL:", eventSourceUrl);
 
-      const response = await fetch("/api/twitter-api", {
+      const eventSource = new EventSource(eventSourceUrl);
+
+      eventSource.onopen = () => {
+        console.log("[EventSource] Connection opened");
+      };
+
+      eventSource.onmessage = (event) => {
+        console.log("[EventSource] Received message:", event.data);
+
+        try {
+          const data = JSON.parse(event.data);
+          console.log("[PARSED] Successfully parsed data:", data);
+          console.log("[UI] About to update UI with:", {
+            currentCount: data.currentCount || 0,
+            currentRequest: data.currentRequest || 0,
+            status: data.status || "処理中...",
+          });
+
+          // UI更新を同期的に実行
+          const newCount = data.currentCount || 0;
+          const newRequest = data.currentRequest || 0;
+          const newMessage = data.status || "処理中...";
+
+          console.log("[UI] Setting states:", {
+            newCount,
+            newRequest,
+            newMessage,
+          });
+
+          setCurrentCount(newCount);
+          setCurrentRequest(newRequest);
+          setLoadingMessage(newMessage);
+
+          console.log("[UI] State update calls completed");
+
+          if (data.waitTime && data.waitTime > 0) {
+            setWaitTime(data.waitTime);
+            setClientWaitTime(data.waitTime); // クライアントサイドのカウントダウンを開始
+            setIsWaiting(true);
+            console.log("[WAIT] Starting countdown with:", data.waitTime);
+          } else {
+            setIsWaiting(false);
+            setWaitTime(0);
+            setClientWaitTime(0);
+          }
+
+          if (data.type === "complete" && data.data) {
+            console.log(
+              "Completion received with data length:",
+              data.data.length
+            );
+            isCompleted = true; // 完了フラグを設定
+            onDataFetched(data.data);
+            toaster.create({
+              title: "取得完了",
+              description: `✅ ${data.data.length}人のメンバーを取得しました！\n手動入力タブに自動で移動します。`,
+              type: "success",
+              duration: 8000,
+            });
+
+            // EventSourceを閉じる前に少し待機してUIを表示
+            setTimeout(() => {
+              eventSource.close();
+              setIsLoading(false);
+              console.log("EventSource closed and loading set to false");
+            }, 3000); // 3秒間完了状態を表示
+            return;
+          } else if (data.type === "error") {
+            console.error("[EventSource] Error type received:", data);
+            isCompleted = true; // エラー時も完了フラグを設定
+            eventSource.close();
+            setIsLoading(false);
+
+            toaster.create({
+              title: "エラー",
+              description: `❌ ${data.error || "Unknown error occurred"}`,
+              type: "error",
+              duration: 10000,
+            });
+            return;
+          }
+        } catch (parseError) {
+          console.error(
+            "Failed to parse SSE data:",
+            event.data,
+            "Error:",
+            parseError
+          );
+          // パースエラーの場合は処理を続行（SSEのpingメッセージなどの可能性があるため）
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.log(
+          "[EventSource] Error event received, isCompleted:",
+          isCompleted
+        );
+
+        // 完了後のエラーイベントは正常動作として扱う
+        if (isCompleted) {
+          console.log("[EventSource] Error after completion - this is normal");
+          eventSource.close();
+          return;
+        }
+
+        // 完了前のエラーは実際のエラーとして処理
+        console.error("[EventSource] Actual error:", error);
+        eventSource.close();
+        setIsLoading(false);
+
+        toaster.create({
+          title: "接続エラー",
+          description: "❌ サーバーとの接続が中断されました。",
+          type: "error",
+          duration: 8000,
+        });
+      };
+    } catch (error: any) {
+      console.error("[EventSource] Catch block error:", error);
+      setIsLoading(false);
+      if (error.name === "AbortError") {
+        toaster.create({
+          title: "タイムアウト",
+          description:
+            "⏰ タイムアウトしました。レート制限により処理に時間がかかっています。\n15分程度時間をおいてから再試行してください。",
+          type: "warning",
+          duration: 10000,
+        });
+      } else {
+        toaster.create({
+          title: "エラー",
+          description: `❌ エラーが発生しました: ${error.message}`,
+          type: "error",
+          duration: 8000,
+        });
+      }
+    }
+    // finally ブロックを削除して、EventSource内でのみ isLoading を制御
+  };
+
+  const handleFetch = async () => {
+    console.log("handleFetch called"); // デバッグ用
+
+    if (!bearerToken.trim() || !listId.trim()) {
+      toaster.create({
+        title: "入力エラー",
+        description: "Bearer Token と リストIDを入力してください",
+        type: "error",
+        duration: 5000,
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setCurrentCount(0);
+    setCurrentRequest(0);
+    setWaitTime(0);
+    setIsWaiting(false);
+    setLoadingMessage("初期化中...");
+    console.log("Loading started"); // デバッグ用
+
+    try {
+      console.log("Sending request to /api/twitter-api-stream"); // デバッグ用
+
+      const response = await fetch("/api/twitter-api-stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "text/event-stream",
         },
         body: JSON.stringify({
           bearerToken: bearerToken.trim(),
           listId: listId.trim(),
           maxRequests: maxRequests,
         }),
-        signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
+      console.log("Response received:", response.status, response.statusText); // デバッグ用
 
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          `HTTP Error: ${response.status} ${response.statusText}`
+        );
+      }
 
-      if (result.success && result.data) {
-        onDataFetched(result.data);
-        toaster.create({
-          title: "取得成功",
-          description: `✅ ${result.data.length}人のメンバーを取得しました！\n手動入力タブに自動で移動します。`,
-          type: "success",
-          duration: 8000,
-        });
-      } else {
-        if (result.error?.includes("レート制限")) {
-          toaster.create({
-            title: "レート制限エラー",
-            description: `⏰ ${result.error}\n\n15分程度時間をおいてから再試行してください。`,
-            type: "warning",
-            duration: 10000,
-          });
-        } else {
-          toaster.create({
-            title: "エラー",
-            description: `❌ エラー: ${result.error}`,
-            type: "error",
-            duration: 8000,
-          });
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("Response body is not readable");
+      }
+
+      console.log("Starting to read stream"); // デバッグ用
+      let chunkCount = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          console.log("Stream reading completed"); // デバッグ用
+          break;
+        }
+
+        chunkCount++;
+        const chunk = decoder.decode(value, { stream: true });
+        console.log(
+          `[Chunk ${chunkCount}] Raw received:`,
+          JSON.stringify(chunk)
+        ); // デバッグ用
+        console.log(`[Chunk ${chunkCount}] Byte length:`, value.byteLength); // デバッグ用
+
+        // SSE フォーマットを期待
+        const lines = chunk.split("\n");
+        console.log(`[Chunk ${chunkCount}] Split into ${lines.length} lines`); // デバッグ用
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          console.log(`[Line] Original: ${JSON.stringify(line)}`); // デバッグ用
+          console.log(`[Line] Trimmed: ${JSON.stringify(trimmedLine)}`); // デバッグ用
+
+          if (trimmedLine.startsWith("data: ")) {
+            try {
+              const jsonData = trimmedLine.slice(6).trim();
+              console.log(`[JSON] Extracted: ${JSON.stringify(jsonData)}`); // デバッグ用
+
+              if (jsonData && jsonData !== "") {
+                const data = JSON.parse(jsonData);
+                console.log("[PARSED] Successfully parsed data:", data); // デバッグ用
+                console.log("[UI] About to update UI with:", {
+                  currentCount: data.currentCount || 0,
+                  currentRequest: data.currentRequest || 0,
+                  status: data.status || "処理中...",
+                }); // デバッグ用
+
+                // UI更新を同期的に実行
+                const newCount = data.currentCount || 0;
+                const newRequest = data.currentRequest || 0;
+                const newMessage = data.status || "処理中...";
+
+                console.log("[UI] Setting states:", {
+                  newCount,
+                  newRequest,
+                  newMessage,
+                });
+
+                setCurrentCount(newCount);
+                setCurrentRequest(newRequest);
+                setLoadingMessage(newMessage);
+
+                console.log("[UI] State update calls completed"); // デバッグ用
+
+                if (data.waitTime && data.waitTime > 0) {
+                  setWaitTime(data.waitTime);
+                  setIsWaiting(true);
+                } else {
+                  setIsWaiting(false);
+                  setWaitTime(0);
+                }
+
+                if (data.type === "complete" && data.data) {
+                  console.log(
+                    "Completion received with data length:",
+                    data.data.length
+                  );
+                  onDataFetched(data.data);
+                  toaster.create({
+                    title: "取得成功",
+                    description: `✅ ${data.data.length}人のメンバーを取得しました！\n手動入力タブに自動で移動します。`,
+                    type: "success",
+                    duration: 8000,
+                  });
+                  return;
+                } else if (data.type === "error") {
+                  throw new Error(data.error || "Unknown error occurred");
+                }
+              }
+            } catch (parseError) {
+              console.warn(
+                "Failed to parse SSE data:",
+                trimmedLine,
+                parseError
+              );
+            }
+          }
         }
       }
     } catch (error: any) {
@@ -106,7 +441,97 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
       }
     } finally {
       setIsLoading(false);
-      setLoadingMessage("取得中...");
+      // 完了後の状態リセットを削除（データが取得できた場合は状態を保持）
+      console.log("Processing completed, isLoading set to false");
+    }
+  };
+
+  // テスト用の関数
+  const handleTestStream = async () => {
+    console.log("handleTestStream called");
+
+    setIsLoading(true);
+    resetProgress();
+    setLoadingMessage("テスト開始...");
+
+    try {
+      const response = await fetch("/api/test-stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({}),
+      });
+
+      console.log("Test response received:", response.status);
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("Response body is not readable");
+      }
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        console.log("Test chunk:", chunk);
+
+        buffer += chunk;
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const jsonData = line.slice(6).trim();
+              if (jsonData) {
+                const data = JSON.parse(jsonData);
+                console.log("Test parsed data:", data);
+
+                setCurrentCount(data.currentCount || 0);
+                setCurrentRequest(data.currentRequest || 0);
+                setLoadingMessage(data.status || "テスト中...");
+
+                if (data.type === "complete" && data.data) {
+                  onDataFetched(data.data);
+                  toaster.create({
+                    title: "テスト成功",
+                    description: `✅ テストデータを取得しました！`,
+                    type: "success",
+                    duration: 5000,
+                  });
+                  return;
+                }
+              }
+            } catch (parseError) {
+              console.warn("Failed to parse test SSE data:", line, parseError);
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("Test stream error:", error);
+      toaster.create({
+        title: "テストエラー",
+        description: `❌ テストエラー: ${error.message}`,
+        type: "error",
+        duration: 8000,
+      });
+    } finally {
+      setIsLoading(false);
+      // テスト完了後の状態リセットも削除
+      console.log("Test completed, isLoading set to false");
     }
   };
 
@@ -229,12 +654,114 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
         </VStack>
       </Box>
 
+      {/* Progress Section - 取得中のみ表示 */}
+      {(() => {
+        console.log("[UI RENDER] isLoading state:", isLoading);
+        return isLoading;
+      })() && (
+        <Box
+          bg="blue.50"
+          p={6}
+          rounded="xl"
+          border="1px"
+          borderColor="blue.200"
+        >
+          <VStack gap={4}>
+            <Heading size="md" color="blue.700" textAlign="center">
+              📊 リアルタイム進捗
+            </Heading>
+
+            {/* 現在の状況表示 */}
+            <VStack gap={3} w="full">
+              <Text
+                color="blue.700"
+                fontWeight="bold"
+                fontSize="lg"
+                textAlign="center"
+              >
+                {loadingMessage}
+              </Text>
+
+              {/* 取得済み人数 */}
+              <Box bg="white" p={4} rounded="lg" w="full" textAlign="center">
+                <Text fontSize="2xl" fontWeight="bold" color="blue.600">
+                  {currentCount.toLocaleString()}人
+                </Text>
+                <Text fontSize="sm" color="gray.600">
+                  取得済みメンバー数
+                </Text>
+              </Box>
+
+              {/* リクエスト進捗 */}
+              <Box bg="white" p={4} rounded="lg" w="full">
+                <Text fontSize="sm" color="gray.600" mb={2}>
+                  API リクエスト進捗
+                </Text>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Box
+                    w="full"
+                    h="4px"
+                    bg="gray.200"
+                    rounded="full"
+                    overflow="hidden"
+                  >
+                    <Box
+                      w={`${(currentRequest / maxRequests) * 100}%`}
+                      h="full"
+                      bg="blue.500"
+                      rounded="full"
+                      transition="width 0.3s ease"
+                    />
+                  </Box>
+                  <Text fontSize="sm" color="blue.600" fontWeight="semibold">
+                    {currentRequest}/{maxRequests}
+                  </Text>
+                </Box>
+              </Box>
+
+              {/* 待機時間表示 */}
+              {clientWaitTime > 0 && (
+                <Box
+                  bg="orange.50"
+                  p={4}
+                  rounded="lg"
+                  w="full"
+                  border="1px"
+                  borderColor="orange.200"
+                >
+                  <Text
+                    fontSize="sm"
+                    color="orange.700"
+                    fontWeight="bold"
+                    mb={1}
+                  >
+                    ⏰ レート制限待機中
+                  </Text>
+                  <Text fontSize="sm" color="orange.600">
+                    残り約 {Math.ceil(clientWaitTime / 1000)} 秒
+                  </Text>
+                </Box>
+              )}
+
+              <Text
+                color="blue.500"
+                fontSize="xs"
+                textAlign="center"
+                fontStyle="italic"
+              >
+                大きなリストの場合、100人ごとに15分の待機時間が発生します
+              </Text>
+            </VStack>
+          </VStack>
+        </Box>
+      )}
+
       {/* Action Button */}
       <VStack gap={3}>
         <Button
           size="lg"
           colorScheme="blue"
-          onClick={handleFetch}
+          onClick={handleFetchWithEventSource}
           disabled={isLoading}
           loading={isLoading}
           w="full"

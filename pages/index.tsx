@@ -147,38 +147,45 @@ export default function Home() {
                   <ScrapingTab onDataFetched={handleDataFetched} />
                 </Tabs.Content>
                 <Tabs.Content value="manual">
-                  <ManualTab
-                    inputData={inputData}
-                    onInputChange={setInputData}
-                  />
+                  <VStack gap={4} align="stretch">
+                    <ManualTab
+                      inputData={inputData}
+                      onInputChange={setInputData}
+                    />
+
+                    <PatternInfo />
+
+                    {/* Action Buttons */}
+                    <HStack gap={4} w="full" justify="center">
+                      <Button
+                        size="lg"
+                        colorScheme="blue"
+                        onClick={processData}
+                      >
+                        🔍 パターン抽出処理
+                      </Button>
+                      <Button
+                        size="lg"
+                        colorScheme="red"
+                        variant="outline"
+                        onClick={clearAll}
+                      >
+                        🗑️ すべてクリア
+                      </Button>
+                    </HStack>
+
+                    {showResults && (
+                      <ResultsSection
+                        data={processedData}
+                        inputLineCount={
+                          inputData.split("\n").filter((line) => line.trim())
+                            .length
+                        }
+                      />
+                    )}
+                  </VStack>
                 </Tabs.Content>
               </Tabs.Root>
-
-              <PatternInfo />
-
-              {/* Action Buttons */}
-              <HStack gap={4} w="full" justify="center">
-                <Button size="lg" colorScheme="blue" onClick={processData}>
-                  🔍 パターン抽出処理
-                </Button>
-                <Button
-                  size="lg"
-                  colorScheme="red"
-                  variant="outline"
-                  onClick={clearAll}
-                >
-                  🗑️ すべてクリア
-                </Button>
-              </HStack>
-
-              {showResults && (
-                <ResultsSection
-                  data={processedData}
-                  inputLineCount={
-                    inputData.split("\n").filter((line) => line.trim()).length
-                  }
-                />
-              )}
             </VStack>
           </Box>
         </VStack>
