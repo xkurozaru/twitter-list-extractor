@@ -10,6 +10,7 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
   const [listId, setListId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("取得中...");
+  const [maxRequests, setMaxRequests] = useState(15);
 
   const handleFetch = async () => {
     if (!bearerToken.trim() || !listId.trim()) {
@@ -21,11 +22,13 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
     setLoadingMessage("メンバー取得を開始中...");
 
     try {
-      // タイムアウトを設定（5分）
+      // タイムアウトを設定（15分に延長）
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+      const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000);
 
-      setLoadingMessage("全メンバーを取得中... (時間がかかる場合があります)");
+      setLoadingMessage(
+        `メンバー取得中... (最大${maxRequests * 100}人まで取得)`
+      );
 
       const response = await fetch("/api/twitter-api", {
         method: "POST",
@@ -35,6 +38,7 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
         body: JSON.stringify({
           bearerToken: bearerToken.trim(),
           listId: listId.trim(),
+          maxRequests: maxRequests,
         }),
         signal: controller.signal,
       });
@@ -49,12 +53,18 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           `✅ ${result.data.length}人のメンバーを取得しました！\n手動入力タブに自動で移動します。`
         );
       } else {
-        alert(`❌ エラー: ${result.error}`);
+        if (result.error?.includes("レート制限")) {
+          alert(
+            `⏰ ${result.error}\n\n15分程度時間をおいてから再試行してください。`
+          );
+        } else {
+          alert(`❌ エラー: ${result.error}`);
+        }
       }
     } catch (error: any) {
       if (error.name === "AbortError") {
         alert(
-          "⏰ タイムアウトしました。リストが非常に大きい場合は、時間をおいて再試行してください。"
+          "⏰ タイムアウトしました。レート制限により処理に時間がかかっています。\n15分程度時間をおいてから再試行してください。"
         );
       } else {
         alert(`❌ エラーが発生しました: ${error.message}`);
@@ -92,6 +102,14 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           最大5000人まで取得可能です（安全制限）。
         </div>
 
+        <div className="warning">
+          <strong>⚠️ レート制限について:</strong> Twitter
+          APIには15分間で最大75回のリクエスト制限があります。
+          大きなリストの場合、自動的に待機時間を設けて取得を続行します。 "Too
+          Many
+          Requests"エラーが発生した場合は、15分程度時間をおいてから再試行してください。
+        </div>
+
         <div className="form-group">
           <label htmlFor="bearerToken">Bearer Token *</label>
           <input
@@ -115,6 +133,34 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           <small>
             リストURLの数字部分: https://twitter.com/i/lists/
             <strong>1234567890123456789</strong>
+          </small>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="maxRequests">最大リクエスト数 (レート制限対策)</label>
+          <select
+            id="maxRequests"
+            value={maxRequests}
+            onChange={(e) => setMaxRequests(parseInt(e.target.value))}
+            style={{
+              width: "100%",
+              padding: "12px 15px",
+              border: "2px solid #e2e8f0",
+              borderRadius: "8px",
+              fontSize: "14px",
+              background: "white",
+            }}
+          >
+            <option value="5">5回 (最大500人) - 最も安全</option>
+            <option value="10">10回 (最大1000人) - 安全</option>
+            <option value="15">15回 (最大1500人) - 推奨</option>
+            <option value="25">25回 (最大2500人) - 中程度</option>
+            <option value="50">50回 (最大5000人) - 上級者向け</option>
+          </select>
+          <small
+            style={{ color: "#64748b", marginTop: "5px", display: "block" }}
+          >
+            レート制限を避けるため、少ない値から始めることをお勧めします
           </small>
         </div>
       </div>

@@ -25,7 +25,7 @@ export default async function handler(
       .json({ success: false, error: "Method not allowed" });
   }
 
-  const { bearerToken, listId } = req.body;
+  const { bearerToken, listId, maxRequests: clientMaxRequests } = req.body;
 
   if (!bearerToken || !listId) {
     return res.status(400).json({
@@ -38,7 +38,8 @@ export default async function handler(
     const allMembers: TwitterUser[] = [];
     let nextToken: string | undefined = undefined;
     let requestCount = 0;
-    const maxRequests = 50; // 安全のため最大50回のリクエストに制限（5000人まで）
+    const maxRequests = clientMaxRequests || 15; // デフォルトは15回（1500人）に制限
+    const baseDelay = 2000; // 基本待機時間を2秒に増加
 
     do {
       requestCount++;
@@ -56,15 +57,64 @@ export default async function handler(
 
       console.log(`リクエスト ${requestCount}: ${allMembers.length}人取得済み`);
 
-      const response = await axios.get<TwitterApiResponse>(url, {
-        headers: {
-          Authorization: `Bearer ${bearerToken}`,
-          "Content-Type": "application/json",
-        },
-      });
+      // レート制限対応の再試行ロジック
+      let retryCount = 0;
+      const maxRetries = 3;
+      let success = false;
+      let response: any;
+
+      while (!success && retryCount < maxRetries) {
+        try {
+          response = await axios.get<TwitterApiResponse>(url, {
+            headers: {
+              Authorization: `Bearer ${bearerToken}`,
+              "Content-Type": "application/json",
+            },
+            timeout: 30000, // 30秒タイムアウト
+          });
+          success = true;
+        } catch (error: any) {
+          retryCount++;
+
+          if (error.response?.status === 429) {
+            // レート制限エラーの場合
+            const resetTime = error.response.headers["x-rate-limit-reset"];
+            const waitTime = resetTime
+              ? Math.max(parseInt(resetTime) * 1000 - Date.now(), 60000) // 最低1分待機
+              : Math.pow(2, retryCount) * 60000; // 指数バックオフ（分単位）
+
+            console.log(
+              `レート制限に達しました。${Math.ceil(
+                waitTime / 1000
+              )}秒後に再試行... (${retryCount}/${maxRetries})`
+            );
+
+            if (retryCount < maxRetries) {
+              await new Promise((resolve) => setTimeout(resolve, waitTime));
+            } else {
+              throw new Error(
+                `レート制限により失敗しました。しばらく時間をおいてから再試行してください。取得済み: ${allMembers.length}人`
+              );
+            }
+          } else {
+            // その他のエラーの場合
+            if (retryCount < maxRetries) {
+              const waitTime = Math.pow(2, retryCount) * 1000; // 指数バックオフ（秒単位）
+              console.log(
+                `エラーが発生しました。${
+                  waitTime / 1000
+                }秒後に再試行... (${retryCount}/${maxRetries})`
+              );
+              await new Promise((resolve) => setTimeout(resolve, waitTime));
+            } else {
+              throw error;
+            }
+          }
+        }
+      }
 
       if (response.data.data && response.data.data.length > 0) {
-        const members: TwitterUser[] = response.data.data.map((user) => ({
+        const members: TwitterUser[] = response.data.data.map((user: any) => ({
           displayName: user.name,
           username: `@${user.username}`,
           profileUrl: `https://twitter.com/${user.username}`,
@@ -75,9 +125,11 @@ export default async function handler(
 
       nextToken = response.data.meta.next_token;
 
-      // レート制限対策: 少し待機
+      // 次のリクエスト前の待機（レート制限対策）
       if (nextToken && requestCount < maxRequests) {
-        await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms待機
+        const delay = baseDelay + requestCount * 100; // 徐々に間隔を広げる
+        console.log(`${delay}ms待機中...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     } while (nextToken && requestCount < maxRequests);
 
