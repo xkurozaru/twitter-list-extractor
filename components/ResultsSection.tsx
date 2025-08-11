@@ -25,12 +25,20 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({
     inputLineCount > 0 ? Math.round((matchCount / inputLineCount) * 100) : 0;
 
   const generateCSVContent = () => {
-    let csvContent = "抽出文字,ユーザー表示名,ユーザーのリンクurl,日程\n";
+    let csvContent = "\ufeff日程,スペース,ペンネーム,twitter\n";
     data.forEach((item) => {
-      csvContent += `"${item.extracted}","${item.displayName}","${item.profileUrl}","${item.day}"\n`;
+      const day = escapeCSVField(item.day || "");
+      const extracted = escapeCSVField(item.extracted || "");
+      const displayName = escapeCSVField(item.displayName || "");
+      const profileUrl = escapeCSVField(item.profileUrl || "");
+      csvContent += `"${day}","${extracted}","${displayName}","${profileUrl}"\n`;
     });
     return csvContent;
   };
+  function escapeCSVField(field: string): string {
+    if (!field) return "";
+    return field.replace(/"/g, '""');
+  }
 
   const downloadCSV = () => {
     if (data.length === 0) {

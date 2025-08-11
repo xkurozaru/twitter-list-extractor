@@ -1,7 +1,9 @@
 export interface TwitterList {
-  id: number;
+  id: string | number;
   name: string;
   username: string;
+  bio?: string;
+  profileUrl?: string;
   followersCount: number;
   followingCount: number;
   tweetCount: number;

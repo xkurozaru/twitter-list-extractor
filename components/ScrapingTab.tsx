@@ -19,6 +19,9 @@ interface ScrapingTabProps {
 export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
   const [listUrl, setListUrl] = useState("");
   const [maxMembers, setMaxMembers] = useState(100);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [useLogin, setUseLogin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleFetch = async () => {
@@ -26,6 +29,17 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
       toaster.create({
         title: "入力エラー",
         description: "リストURLを入力してください",
+        type: "error",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (useLogin && (!username.trim() || !password.trim())) {
+      toaster.create({
+        title: "入力エラー",
+        description:
+          "ログインする場合はユーザー名とパスワードを入力してください",
         type: "error",
         duration: 3000,
       });
@@ -43,6 +57,8 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
         body: JSON.stringify({
           listUrl: listUrl.trim(),
           maxMembers,
+          username: useLogin ? username : undefined,
+          password: useLogin ? password : undefined,
         }),
       });
 
@@ -93,6 +109,16 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
             スクレイピング機能はTwitterの利用規約に注意して使用してください。
             レート制限やアクセス制限にかかる可能性があります。
           </Text>
+          <Text fontSize="sm" color="orange.600" mt={2}>
+            <strong>認証について:</strong> Xのリストは現在ログインが必要です。
+            認証情報を入力することでアクセス可能になりますが、
+            セキュリティ上のリスクを理解の上でご使用ください。
+          </Text>
+          <Text fontSize="sm" color="red.600" mt={1}>
+            <strong>重要:</strong>{" "}
+            二段階認証が有効な場合、ログインが失敗する可能性があります。
+            一時的に無効にするか、アプリパスワードを使用してください。
+          </Text>
         </VStack>
       </Box>
 
@@ -110,7 +136,7 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
               type="url"
               value={listUrl}
               onChange={(e) => setListUrl(e.target.value)}
-              placeholder="https://twitter.com/username/lists/listname"
+              placeholder="https://x.com/i/lists/1234567890123456789/members"
               bg="white"
             />
           </Box>
@@ -129,6 +155,55 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
               bg="white"
             />
           </Box>
+
+          <Box w="full">
+            <label>
+              <input
+                type="checkbox"
+                checked={useLogin}
+                onChange={(e) => setUseLogin(e.target.checked)}
+                style={{ marginRight: "8px" }}
+              />
+              <Text as="span" fontWeight="medium">
+                Xアカウントでログインする
+              </Text>
+            </label>
+            {useLogin && (
+              <Text fontSize="sm" color="gray.600" mt={1}>
+                認証情報はスクレイピング処理中のみ使用され、保存されません。
+              </Text>
+            )}
+          </Box>
+
+          {useLogin && (
+            <>
+              <Box w="full">
+                <Text mb={2} fontWeight="medium">
+                  ユーザー名/メールアドレス *
+                </Text>
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="username または email@example.com"
+                  bg="white"
+                />
+              </Box>
+
+              <Box w="full">
+                <Text mb={2} fontWeight="medium">
+                  パスワード *
+                </Text>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="パスワードを入力"
+                  bg="white"
+                />
+              </Box>
+            </>
+          )}
         </VStack>
       </Box>
 

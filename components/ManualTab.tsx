@@ -17,15 +17,15 @@ export const ManualTab: React.FC<ManualTabProps> = ({
           ✋ メンバーデータ手動入力
         </Heading>
         <Text mb={4} color="gray.600">
-          各行に「表示名 \ プロフィールURL」の形式で入力してください
+          各行に「表示名 \ ユーザー名」の形式で入力してください
         </Text>
         <Textarea
           value={inputData}
           onChange={(e) => onInputChange(e.target.value)}
           placeholder={`例:
-user1/あ01a \\ https://twitter.com/user1
-山田太郎🏔A-23b \\ https://twitter.com/yamada
-test_user@aー45ab \\ https://twitter.com/test_user`}
+user1/あ01a \\ user1
+山田太郎🏔A-23b \\ yamada
+test_user@aー45ab \\ test_user`}
           rows={12}
           bg="white"
           fontFamily="mono"

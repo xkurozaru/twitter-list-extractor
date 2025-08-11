@@ -120,22 +120,3 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
 
   return matches;
 }
-
-// CSVフィールド内の二重引用符をエスケープ
-function escapeCSVField(field: string): string {
-  if (!field) return "";
-  return field.replace(/"/g, '""');
-}
-
-// CSVファイル生成
-export function generateCSV(data: any[]): string {
-  let csvContent = "\ufeff日程,スペース,ペンネーム,twitter\n";
-  data.forEach((item) => {
-    const day = escapeCSVField(item.day || "");
-    const extracted = escapeCSVField(item.extracted || "");
-    const displayName = escapeCSVField(item.displayName || "");
-    const profileUrl = escapeCSVField(item.profileUrl || "");
-    csvContent += `"${day}","${extracted}","${displayName}","${profileUrl}"\n`;
-  });
-  return csvContent;
-}

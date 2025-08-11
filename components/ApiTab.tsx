@@ -360,7 +360,7 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
               bg="white"
             />
             <Text fontSize="sm" color="gray.600" mt={2}>
-              リストURLの数字部分: https://twitter.com/i/lists/
+              リストURLの数字部分: https://x.com/i/lists/
               <Text as="span" fontWeight="bold">
                 1234567890123456789
               </Text>
