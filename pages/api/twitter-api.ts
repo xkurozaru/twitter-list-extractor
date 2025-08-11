@@ -11,6 +11,7 @@ interface TwitterApiResponse {
   }>;
   meta: {
     result_count: number;
+    next_token?: string;
   };
 }
 
@@ -34,24 +35,57 @@ export default async function handler(
   }
 
   try {
-    const response = await axios.get<TwitterApiResponse>(
-      `https://api.twitter.com/2/lists/${listId}/members?max_results=100&user.fields=name,username,public_metrics`,
-      {
+    const allMembers: TwitterUser[] = [];
+    let nextToken: string | undefined = undefined;
+    let requestCount = 0;
+    const maxRequests = 50; // 安全のため最大50回のリクエストに制限（5000人まで）
+
+    do {
+      requestCount++;
+      if (requestCount > maxRequests) {
+        console.warn(
+          `最大リクエスト数 (${maxRequests}) に達しました。取得を中止します。`
+        );
+        break;
+      }
+
+      let url = `https://api.twitter.com/2/lists/${listId}/members?max_results=100&user.fields=name,username,public_metrics`;
+      if (nextToken) {
+        url += `&pagination_token=${nextToken}`;
+      }
+
+      console.log(`リクエスト ${requestCount}: ${allMembers.length}人取得済み`);
+
+      const response = await axios.get<TwitterApiResponse>(url, {
         headers: {
           Authorization: `Bearer ${bearerToken}`,
           "Content-Type": "application/json",
         },
+      });
+
+      if (response.data.data && response.data.data.length > 0) {
+        const members: TwitterUser[] = response.data.data.map((user) => ({
+          displayName: user.name,
+          username: `@${user.username}`,
+          profileUrl: `https://twitter.com/${user.username}`,
+        }));
+
+        allMembers.push(...members);
       }
-    );
 
-    if (response.data.data && response.data.data.length > 0) {
-      const members: TwitterUser[] = response.data.data.map((user) => ({
-        displayName: user.name,
-        username: `@${user.username}`,
-        profileUrl: `https://twitter.com/${user.username}`,
-      }));
+      nextToken = response.data.meta.next_token;
 
-      res.status(200).json({ success: true, data: members });
+      // レート制限対策: 少し待機
+      if (nextToken && requestCount < maxRequests) {
+        await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms待機
+      }
+    } while (nextToken && requestCount < maxRequests);
+
+    if (allMembers.length > 0) {
+      console.log(
+        `取得完了: 総計 ${allMembers.length}人のメンバーを取得しました`
+      );
+      res.status(200).json({ success: true, data: allMembers });
     } else {
       res.status(404).json({
         success: false,

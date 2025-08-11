@@ -9,6 +9,7 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
   const [bearerToken, setBearerToken] = useState("");
   const [listId, setListId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("取得中...");
 
   const handleFetch = async () => {
     if (!bearerToken.trim() || !listId.trim()) {
@@ -17,8 +18,15 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
     }
 
     setIsLoading(true);
+    setLoadingMessage("メンバー取得を開始中...");
 
     try {
+      // タイムアウトを設定（5分）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
+      setLoadingMessage("全メンバーを取得中... (時間がかかる場合があります)");
+
       const response = await fetch("/api/twitter-api", {
         method: "POST",
         headers: {
@@ -28,20 +36,32 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           bearerToken: bearerToken.trim(),
           listId: listId.trim(),
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const result = await response.json();
 
       if (result.success && result.data) {
         onDataFetched(result.data);
-        alert(`${result.data.length}人のメンバーを取得しました！`);
+        alert(
+          `✅ ${result.data.length}人のメンバーを取得しました！\n手動入力タブに自動で移動します。`
+        );
       } else {
-        alert(`エラー: ${result.error}`);
+        alert(`❌ エラー: ${result.error}`);
       }
     } catch (error: any) {
-      alert(`エラーが発生しました: ${error.message}`);
+      if (error.name === "AbortError") {
+        alert(
+          "⏰ タイムアウトしました。リストが非常に大きい場合は、時間をおいて再試行してください。"
+        );
+      } else {
+        alert(`❌ エラーが発生しました: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
+      setLoadingMessage("取得中...");
     }
   };
 
@@ -65,6 +85,12 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
 
       <div className="input-section">
         <h3>🔑 API認証情報</h3>
+
+        <div className="info">
+          <strong>ℹ️ 注意:</strong>{" "}
+          大きなリストの場合、全メンバーの取得に時間がかかる場合があります。
+          最大5000人まで取得可能です（安全制限）。
+        </div>
 
         <div className="form-group">
           <label htmlFor="bearerToken">Bearer Token *</label>
@@ -102,10 +128,10 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           {isLoading ? (
             <span className="loading">
               <div className="spinner"></div>
-              取得中...
+              {loadingMessage}
             </span>
           ) : (
-            "🚀 APIでメンバー取得"
+            "🚀 全メンバー取得"
           )}
         </button>
       </div>
