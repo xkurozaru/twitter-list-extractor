@@ -1,5 +1,13 @@
 import { toaster } from "@/components/ui/toaster";
-import { Box, Button, Heading, Input, Text, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Heading,
+  Input,
+  Link,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import React, { useState } from "react";
 import { TwitterUser } from "../lib/types";
 
@@ -110,11 +118,18 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           🔧 Twitter API設定手順
         </Heading>
         <VStack align="start" color="blue.600" gap={2}>
-          <Text>1. Twitter Developer Portal にアクセス</Text>
-          <Text>2. 開発者アカウントを作成・申請</Text>
-          <Text>3. 新しいアプリを作成</Text>
-          <Text>4. Bearer Tokenを取得</Text>
-          <Text>5. 下記フォームに必要情報を入力</Text>
+          <Text>
+            1.{" "}
+            <Link
+              href="https://developer.twitter.com/en/portal/dashboard"
+              color="blue.800"
+            >
+              Twitter Developer Portal
+            </Link>{" "}
+            にアクセス
+          </Text>
+          <Text>2. Bearer Tokenを取得</Text>
+          <Text>3. 下記フォームに必要情報を入力</Text>
         </VStack>
       </Box>
 

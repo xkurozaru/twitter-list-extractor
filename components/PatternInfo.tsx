@@ -19,7 +19,7 @@ export const PatternInfo: React.FC = () => {
           <Box pl={4} fontSize="sm" color="gray.600">
             <Text>• 西2す-16a → す16a</Text>
             <Text>• 東モ23b → モ23b</Text>
-            <Text>• 南"ｓ"05a → ｓ05a</Text>
+            <Text>• 南"ｓ"05a → s05a</Text>
             <Text>• 7Q-05b → Q05b</Text>
             <Text>• R45b → R45b</Text>
           </Box>
