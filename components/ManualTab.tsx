@@ -1,3 +1,4 @@
+import { Box, Heading, Text, Textarea, VStack } from "@chakra-ui/react";
 import React from "react";
 
 interface ManualTabProps {
@@ -10,19 +11,27 @@ export const ManualTab: React.FC<ManualTabProps> = ({
   onInputChange,
 }) => {
   return (
-    <div className="manual-tab">
-      <div className="input-section">
-        <h3>✋ メンバーデータ手動入力</h3>
-        <p style={{ marginBottom: "15px", color: "#64748b" }}>
+    <VStack gap={4} align="stretch" pt={4}>
+      <Box bg="gray.50" p={6} rounded="xl">
+        <Heading size="md" mb={4}>
+          ✋ メンバーデータ手動入力
+        </Heading>
+        <Text mb={4} color="gray.600">
           各行に「表示名 ユーザー名 プロフィールURL」の形式で入力してください
-        </p>
-        <textarea
+        </Text>
+        <Textarea
           value={inputData}
           onChange={(e) => onInputChange(e.target.value)}
-          placeholder="例:&#10;あ01a @user1 https://twitter.com/user1&#10;A-23b 山田太郎 https://twitter.com/yamada&#10;aー45ab @test_user https://twitter.com/test_user"
-          rows={10}
+          placeholder={`例:
+あ01a @user1 https://twitter.com/user1
+A-23b 山田太郎 https://twitter.com/yamada
+aー45ab @test_user https://twitter.com/test_user`}
+          rows={12}
+          bg="white"
+          fontFamily="mono"
+          fontSize="sm"
         />
-      </div>
-    </div>
+      </Box>
+    </VStack>
   );
 };

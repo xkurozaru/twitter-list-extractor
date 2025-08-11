@@ -1,28 +1,47 @@
+import { Box, Heading, Text, VStack } from "@chakra-ui/react";
 import React from "react";
 
 export const PatternInfo: React.FC = () => {
   return (
-    <div className="pattern-info">
-      <h4>🎯 抽出パターン</h4>
-      <div className="pattern-examples">
-        {`コミケ配置場所から以下のパターンを抽出します:
+    <Box bg="gray.50" p={6} rounded="xl">
+      <Heading size="md" mb={4}>
+        🎯 抽出パターン
+      </Heading>
+      <VStack align="start" gap={4}>
+        <Text fontWeight="medium" color="gray.700">
+          コミケ配置場所から以下のパターンを抽出します:
+        </Text>
 
-抽出例:
-• 西2す-16a → す16a
-• 東モ23b → モ23b
-• 南"ｓ"05a → ｓ05a
-• 7Q-05b → Q05b
-• R45b → R45b
+        <Box>
+          <Text fontWeight="medium" mb={2} color="blue.600">
+            抽出例:
+          </Text>
+          <Box pl={4} fontSize="sm" color="gray.600">
+            <Text>• 西2す-16a → す16a</Text>
+            <Text>• 東モ23b → モ23b</Text>
+            <Text>• 南"ｓ"05a → ｓ05a</Text>
+            <Text>• 7Q-05b → Q05b</Text>
+            <Text>• R45b → R45b</Text>
+          </Box>
+        </Box>
 
-日程変換:
-• 土曜、土曜日 → 1日目
-• 日曜、日曜日 → 2日目
-• 1日目、一日目 → 1日目
-• 2日目、二日目 → 2日目
-• 両方含む場合 → 両日
+        <Box>
+          <Text fontWeight="medium" mb={2} color="purple.600">
+            日程変換:
+          </Text>
+          <Box pl={4} fontSize="sm" color="gray.600">
+            <Text>• 土曜、土曜日 → 1日目</Text>
+            <Text>• 日曜、日曜日 → 2日目</Text>
+            <Text>• 1日目、一日目 → 1日目</Text>
+            <Text>• 2日目、二日目 → 2日目</Text>
+            <Text>• 両方含む場合 → 両日</Text>
+          </Box>
+        </Box>
 
-マッチしない場合は空欄で出力されます。`}
-      </div>
-    </div>
+        <Text fontSize="sm" color="gray.500" fontStyle="italic">
+          マッチしない場合は空欄で出力されます。
+        </Text>
+      </VStack>
+    </Box>
   );
 };

@@ -1,3 +1,13 @@
+import {
+  Box,
+  Button,
+  Heading,
+  HStack,
+  Input,
+  Spinner,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import React, { useState } from "react";
 import { TwitterUser } from "../lib/types";
 
@@ -46,57 +56,77 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
   };
 
   return (
-    <div className="scraping-tab">
-      <div className="warning">
-        <strong>⚠️ 注意:</strong>{" "}
-        スクレイピング機能はTwitterの利用規約に注意して使用してください。
-        レート制限やアクセス制限にかかる可能性があります。
-      </div>
+    <VStack gap={6} align="stretch" pt={4}>
+      <Box
+        bg="orange.50"
+        p={4}
+        rounded="xl"
+        border="1px"
+        borderColor="orange.200"
+      >
+        <VStack align="start" gap={1}>
+          <Text fontWeight="bold" color="orange.700">
+            ⚠️ 注意:
+          </Text>
+          <Text fontSize="sm" color="orange.600">
+            スクレイピング機能はTwitterの利用規約に注意して使用してください。
+            レート制限やアクセス制限にかかる可能性があります。
+          </Text>
+        </VStack>
+      </Box>
 
-      <div className="input-section">
-        <h3>🕷️ スクレイピング設定</h3>
+      <Box bg="gray.50" p={6} rounded="xl">
+        <Heading size="md" mb={4}>
+          🕷️ スクレイピング設定
+        </Heading>
 
-        <div className="form-group">
-          <label htmlFor="listUrl">リストURL *</label>
-          <input
-            type="url"
-            id="listUrl"
-            value={listUrl}
-            onChange={(e) => setListUrl(e.target.value)}
-            placeholder="https://twitter.com/username/lists/listname"
-          />
-        </div>
+        <VStack gap={4}>
+          <Box w="full">
+            <Text mb={2} fontWeight="medium">
+              リストURL *
+            </Text>
+            <Input
+              type="url"
+              value={listUrl}
+              onChange={(e) => setListUrl(e.target.value)}
+              placeholder="https://twitter.com/username/lists/listname"
+              bg="white"
+            />
+          </Box>
 
-        <div className="form-group">
-          <label htmlFor="maxMembers">最大取得数</label>
-          <input
-            type="number"
-            id="maxMembers"
-            value={maxMembers}
-            onChange={(e) => setMaxMembers(parseInt(e.target.value) || 100)}
-            min="1"
-            max="1000"
-            placeholder="100"
-          />
-        </div>
-      </div>
+          <Box w="full">
+            <Text mb={2} fontWeight="medium">
+              最大取得数
+            </Text>
+            <Input
+              type="number"
+              value={maxMembers}
+              onChange={(e) => setMaxMembers(parseInt(e.target.value) || 100)}
+              min={1}
+              max={1000}
+              placeholder="100"
+              bg="white"
+            />
+          </Box>
+        </VStack>
+      </Box>
 
-      <div className="button-group">
-        <button
-          className="btn-primary"
-          onClick={handleFetch}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <span className="loading">
-              <div className="spinner"></div>
-              取得中...
-            </span>
-          ) : (
-            "🔍 スクレイピングで取得"
-          )}
-        </button>
-      </div>
-    </div>
+      <Button
+        onClick={handleFetch}
+        disabled={isLoading}
+        colorScheme="blue"
+        size="lg"
+        w="full"
+      >
+        {isLoading ? (
+          <HStack>
+            <Spinner size="sm" />
+            <Text>取得中...</Text>
+          </HStack>
+        ) : (
+          "🔍 スクレイピングで取得"
+        )}
+      </Button>
+    </VStack>
   );
 };

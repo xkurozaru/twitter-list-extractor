@@ -9,9 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chakra-ui/react": "^3.24.2",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "axios": "^1.11.0",
     "cheerio": "^1.1.2",
     "csv-writer": "^1.6.0",
+    "framer-motion": "^12.23.12",
     "next": "15.4.6",
     "puppeteer": "^24.16.1",
     "react": "19.1.0",

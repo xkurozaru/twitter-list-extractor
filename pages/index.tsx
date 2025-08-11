@@ -1,3 +1,13 @@
+import {
+  Box,
+  Button,
+  Container,
+  Heading,
+  HStack,
+  Tabs,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import { useState } from "react";
 import { ApiTab } from "../components/ApiTab";
 import { ManualTab } from "../components/ManualTab";
@@ -70,64 +80,95 @@ export default function Home() {
   };
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1>🐦 Twitter自動リスト抽出ツール</h1>
-        <p>
-          Twitterリストメンバーを自動取得し、特定パターンを抽出してスプレッドシート形式で出力
-        </p>
-      </div>
-
-      <div className="content">
-        <div className="tabs">
-          <button
-            className={`tab ${activeTab === "api" ? "active" : ""}`}
-            onClick={() => setActiveTab("api")}
+    <Box
+      minH="100vh"
+      bgGradient="linear(to-br, blue.400, purple.500)"
+      py={8}
+      px={4}
+    >
+      <Container maxW="6xl">
+        <VStack gap={8}>
+          {/* Header */}
+          <Box
+            bg="white"
+            shadow="xl"
+            rounded="2xl"
+            p={8}
+            textAlign="center"
+            w="full"
           >
-            🔑 API取得
-          </button>
-          <button
-            className={`tab ${activeTab === "scraping" ? "active" : ""}`}
-            onClick={() => setActiveTab("scraping")}
-          >
-            🕷️ スクレイピング
-          </button>
-          <button
-            className={`tab ${activeTab === "manual" ? "active" : ""}`}
-            onClick={() => setActiveTab("manual")}
-          >
-            ✋ 手動入力
-          </button>
-        </div>
+            <Heading
+              size="2xl"
+              bgGradient="linear(to-r, blue.400, purple.500)"
+              bgClip="text"
+              mb={4}
+            >
+              🐦 Twitter自動リスト抽出ツール
+            </Heading>
+            <Text fontSize="lg" color="gray.600">
+              Twitterリストメンバーを自動取得し、特定パターンを抽出してスプレッドシート形式で出力
+            </Text>
+          </Box>
 
-        {activeTab === "api" && <ApiTab onDataFetched={handleDataFetched} />}
-        {activeTab === "scraping" && (
-          <ScrapingTab onDataFetched={handleDataFetched} />
-        )}
-        {activeTab === "manual" && (
-          <ManualTab inputData={inputData} onInputChange={setInputData} />
-        )}
+          {/* Main Content */}
+          <Box bg="white" shadow="xl" rounded="2xl" p={8} w="full">
+            <VStack gap={6}>
+              {/* Tabs */}
+              <Tabs.Root
+                value={activeTab}
+                onValueChange={(e) => setActiveTab(e.value as any)}
+              >
+                <Tabs.List>
+                  <Tabs.Trigger value="api">🔑 API取得</Tabs.Trigger>
+                  <Tabs.Trigger value="scraping">
+                    🕷️ スクレイピング
+                  </Tabs.Trigger>
+                  <Tabs.Trigger value="manual">✋ 手動入力</Tabs.Trigger>
+                </Tabs.List>
 
-        <PatternInfo />
+                <Tabs.Content value="api">
+                  <ApiTab onDataFetched={handleDataFetched} />
+                </Tabs.Content>
+                <Tabs.Content value="scraping">
+                  <ScrapingTab onDataFetched={handleDataFetched} />
+                </Tabs.Content>
+                <Tabs.Content value="manual">
+                  <ManualTab
+                    inputData={inputData}
+                    onInputChange={setInputData}
+                  />
+                </Tabs.Content>
+              </Tabs.Root>
 
-        <div className="button-group">
-          <button className="btn-primary" onClick={processData}>
-            🔍 パターン抽出処理
-          </button>
-          <button className="btn-clear" onClick={clearAll}>
-            🗑️ すべてクリア
-          </button>
-        </div>
+              <PatternInfo />
 
-        {showResults && (
-          <ResultsSection
-            data={processedData}
-            inputLineCount={
-              inputData.split("\n").filter((line) => line.trim()).length
-            }
-          />
-        )}
-      </div>
-    </div>
+              {/* Action Buttons */}
+              <HStack gap={4} w="full" justify="center">
+                <Button size="lg" colorScheme="blue" onClick={processData}>
+                  🔍 パターン抽出処理
+                </Button>
+                <Button
+                  size="lg"
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={clearAll}
+                >
+                  🗑️ すべてクリア
+                </Button>
+              </HStack>
+
+              {showResults && (
+                <ResultsSection
+                  data={processedData}
+                  inputLineCount={
+                    inputData.split("\n").filter((line) => line.trim()).length
+                  }
+                />
+              )}
+            </VStack>
+          </Box>
+        </VStack>
+      </Container>
+    </Box>
   );
 }

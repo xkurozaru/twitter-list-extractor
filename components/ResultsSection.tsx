@@ -1,3 +1,12 @@
+import {
+  Box,
+  Button,
+  Code,
+  Heading,
+  SimpleGrid,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import React from "react";
 import { ExtractedData } from "../lib/types";
 
@@ -49,35 +58,67 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({
   };
 
   return (
-    <div className="results-section">
-      <h3>📊 処理結果</h3>
+    <VStack gap={6} align="stretch" pt={4}>
+      <Box bg="gray.50" p={6} rounded="xl">
+        <Heading size="md" mb={4}>
+          📊 処理結果
+        </Heading>
 
-      <div className="stats">
-        <div className="stat-card">
-          <span className="stat-number">{inputLineCount}</span>
-          <span className="stat-label">総データ数</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-number">{matchCount}</span>
-          <span className="stat-label">マッチ数</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-number">{matchRate}%</span>
-          <span className="stat-label">マッチ率</span>
-        </div>
-      </div>
+        <SimpleGrid columns={{ base: 1, md: 3 }} gap={4} mb={6}>
+          <Box bg="blue.50" p={4} rounded="xl">
+            <Text fontSize="sm" color="blue.600" fontWeight="medium">
+              総データ数
+            </Text>
+            <Text fontSize="2xl" fontWeight="bold" color="blue.700">
+              {inputLineCount}
+            </Text>
+          </Box>
+          <Box bg="green.50" p={4} rounded="xl">
+            <Text fontSize="sm" color="green.600" fontWeight="medium">
+              マッチ数
+            </Text>
+            <Text fontSize="2xl" fontWeight="bold" color="green.700">
+              {matchCount}
+            </Text>
+          </Box>
+          <Box bg="purple.50" p={4} rounded="xl">
+            <Text fontSize="sm" color="purple.600" fontWeight="medium">
+              マッチ率
+            </Text>
+            <Text fontSize="2xl" fontWeight="bold" color="purple.700">
+              {matchRate}%
+            </Text>
+          </Box>
+        </SimpleGrid>
 
-      <div className="button-group">
-        <button
-          className="btn-secondary"
+        <Button
           onClick={downloadCSV}
           disabled={matchCount === 0}
+          colorScheme="blue"
+          size="lg"
+          w="full"
         >
           📥 CSV ダウンロード
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="csv-output">{generateCSVContent()}</div>
-    </div>
+      <Box bg="white" p={6} rounded="xl" border="1px" borderColor="gray.200">
+        <Heading size="sm" mb={4}>
+          CSV プレビュー
+        </Heading>
+        <Code
+          display="block"
+          whiteSpace="pre-wrap"
+          fontSize="sm"
+          bg="gray.50"
+          p={4}
+          rounded="md"
+          maxH="300px"
+          overflowY="auto"
+        >
+          {generateCSVContent()}
+        </Code>
+      </Box>
+    </VStack>
   );
 };
