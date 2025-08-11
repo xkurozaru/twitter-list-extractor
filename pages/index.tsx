@@ -30,7 +30,7 @@ export default function Home() {
     console.log("取得したメンバー数:", members.length);
 
     const inputText = members
-      .map((member) => `${member.name} ${member.username}`)
+      .map((member) => `${member.name} \\ ${member.username}`)
       .join("\n");
 
     console.log("生成されたinputText:", inputText.substring(0, 200) + "...");
@@ -59,7 +59,7 @@ export default function Home() {
     const newProcessedData: ExtractedData[] = [];
 
     lines.forEach((line) => {
-      const parts = line.trim().split(/\s+/);
+      const parts = line.trim().split(" \\ ");
       if (parts.length >= 2) {
         const displayName = parts[0];
         const profileUrl = `https://x.com/${parts[1]}`;

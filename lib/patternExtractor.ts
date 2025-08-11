@@ -7,11 +7,6 @@ export function toHalfWidth(str: string): string {
   });
 }
 
-// 空白を削除
-export function removeWhitespace(str: string): string {
-  return str.replace(/\s+/g, "");
-}
-
 // "ブロック"や"エリア"などの冗長な文字列を削除
 export function removeRedundantStrings(str: string): string {
   return str.replace(/(ブロック|エリア)/g, "");
@@ -68,9 +63,7 @@ export function extractDay(displayName: string): string {
 
 // コミケ配置場所のパターンマッチングと変換
 export function extractAndConvertPattern(displayName: string): PatternMatch[] {
-  const normalizedName = removeRedundantStrings(
-    removeWhitespace(toHalfWidth(displayName))
-  );
+  const normalizedName = removeRedundantStrings(toHalfWidth(displayName));
   const matches: PatternMatch[] = [];
 
   // 日程情報を抽出
