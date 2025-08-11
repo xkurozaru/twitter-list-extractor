@@ -16,7 +16,7 @@ import { PatternInfo } from "../components/PatternInfo";
 import { ResultsSection } from "../components/ResultsSection";
 import { ScrapingTab } from "../components/ScrapingTab";
 import { extractAndConvertPattern } from "../lib/patternExtractor";
-import { ExtractedData, TwitterUser } from "../lib/types";
+import { ExtractedData, TwitterList } from "../lib/types";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"api" | "scraping" | "manual">(
@@ -26,14 +26,11 @@ export default function Home() {
   const [processedData, setProcessedData] = useState<ExtractedData[]>([]);
   const [showResults, setShowResults] = useState(false);
 
-  const handleDataFetched = (members: TwitterUser[]) => {
+  const handleDataFetched = (members: TwitterList[]) => {
     console.log("取得したメンバー数:", members.length);
 
     const inputText = members
-      .map(
-        (member) =>
-          `${member.displayName} ${member.username} ${member.profileUrl}`
-      )
+      .map((member) => `${member.name} ${member.username}`)
       .join("\n");
 
     console.log("生成されたinputText:", inputText.substring(0, 200) + "...");
@@ -63,10 +60,9 @@ export default function Home() {
 
     lines.forEach((line) => {
       const parts = line.trim().split(/\s+/);
-      if (parts.length >= 3) {
+      if (parts.length >= 2) {
         const displayName = parts[0];
-        const username = parts[1];
-        const profileUrl = parts.slice(2).join(" ");
+        const profileUrl = `https://x.com/${parts[1]}`;
 
         const matches = extractAndConvertPattern(displayName);
 

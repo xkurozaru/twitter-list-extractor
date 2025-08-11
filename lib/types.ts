@@ -1,7 +1,10 @@
-export interface TwitterUser {
-  displayName: string;
+export interface TwitterList {
+  id: number;
+  name: string;
   username: string;
-  profileUrl: string;
+  followersCount: number;
+  followingCount: number;
+  tweetCount: number;
 }
 
 export interface ExtractedData {

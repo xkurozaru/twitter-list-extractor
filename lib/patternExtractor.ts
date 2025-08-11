@@ -67,19 +67,19 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
   // 複数のパターンを試行
   const patterns = [
     // パターン1: 東西南北 + エリア記号 + 数字 + ab (例: 西2す-16a, 東モ23b)
-    /([東西南北][1-7]?)\s*([あ-んア-ンA-Za-z])\s*[-ー]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    /([東西南北][1-7]?)\s*([あ-んア-ンA-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
 
     // パターン2: 東西南北 + 数字 + エリア記号 + 数字 + ab (例: 西2"こ"-28a)
-    /([東西南北][1-7]?)\s*["']?([あ-んア-ンA-Za-z])["']?\s*[-ー]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    /([東西南北][1-7]?)\s*["']?([あ-んア-ンA-Za-z])["']?\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
 
     // パターン3: エリア記号 + 数字 + ab のみ (例: す-16a, モ23b)
-    /([あ-んア-ンA-Za-z])\s*[-ー]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    /([あ-んア-ンA-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
 
     // パターン4: 数字 + エリア記号 + 数字 + ab (例: 7Q-05b)
-    /([0-9])\s*([A-Za-z])\s*[-ー]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    /([0-9])\s*([A-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
 
     // パターン5: アルファベット + 数字 + ab (例: Q-17b, R45b)
-    /([A-Za-z])\s*[-ー]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    /([A-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
   ];
 
   for (const pattern of patterns) {
@@ -138,11 +138,21 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
   return matches;
 }
 
-// CSVファイル生成（新しいカラム追加）
+// CSVフィールド内の二重引用符をエスケープ
+function escapeCSVField(field: string): string {
+  if (!field) return "";
+  return field.replace(/"/g, '""');
+}
+
+// CSVファイル生成
 export function generateCSV(data: any[]): string {
-  let csvContent = "\ufeff日程,抽出文字,ユーザー表示名,ユーザーのリンクurl\n";
+  let csvContent = "\ufeff日程,スペース,ペンネーム,twitter\n";
   data.forEach((item) => {
-    csvContent += `"${item.day}","${item.extracted}","${item.displayName}","${item.profileUrl}"\n`;
+    const day = escapeCSVField(item.day || "");
+    const extracted = escapeCSVField(item.extracted || "");
+    const displayName = escapeCSVField(item.displayName || "");
+    const profileUrl = escapeCSVField(item.profileUrl || "");
+    csvContent += `"${day}","${extracted}","${displayName}","${profileUrl}"\n`;
   });
   return csvContent;
 }

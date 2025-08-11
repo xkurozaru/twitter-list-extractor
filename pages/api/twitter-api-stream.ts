@@ -1,3 +1,4 @@
+import { TwitterList } from "@/lib/types";
 import axios from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -104,7 +105,7 @@ export default async function handler(
   };
 
   try {
-    const allMembers: any[] = [];
+    const allMembers: TwitterList[] = [];
     let nextToken: string | undefined = undefined;
     let requestCount = 0;
     const maxRequests = clientMaxRequests || 15;
@@ -348,14 +349,16 @@ export default async function handler(
       }
 
       if (response?.data?.data) {
-        const newMembers = response.data.data.map((user: any) => ({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          followers_count: user.public_metrics?.followers_count || 0,
-          following_count: user.public_metrics?.following_count || 0,
-          tweet_count: user.public_metrics?.tweet_count || 0,
-        }));
+        const newMembers: TwitterList[] = response.data.data.map(
+          (user: any) => ({
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            followersCount: user.public_metrics?.followers_count || 0,
+            followingCount: user.public_metrics?.following_count || 0,
+            tweetCount: user.public_metrics?.tweet_count || 0,
+          })
+        );
 
         allMembers.push(...newMembers);
         nextToken = response.data.meta.next_token;

@@ -1,4 +1,5 @@
 import { toaster } from "@/components/ui/toaster";
+import { TwitterList } from "@/lib/types";
 import {
   Box,
   Button,
@@ -10,10 +11,9 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
-import { TwitterUser } from "../lib/types";
 
 interface ScrapingTabProps {
-  onDataFetched: (data: TwitterUser[]) => void;
+  onDataFetched: (data: TwitterList[]) => void;
 }
 
 export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
