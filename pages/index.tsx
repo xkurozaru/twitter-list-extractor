@@ -45,12 +45,14 @@ export default function Home() {
 
         const matches = extractAndConvertPattern(displayName);
 
+        // マッチした場合はそれぞれのマッチを追加
         if (matches.length > 0) {
           matches.forEach((match) => {
             newProcessedData.push({
               extracted: match.converted,
               displayName: displayName,
               profileUrl: profileUrl,
+              day: match.day,
             });
           });
         }

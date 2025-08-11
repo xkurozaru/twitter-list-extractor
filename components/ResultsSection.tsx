@@ -15,9 +15,9 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({
     inputLineCount > 0 ? Math.round((matchCount / inputLineCount) * 100) : 0;
 
   const generateCSVContent = () => {
-    let csvContent = "抽出文字,ユーザー表示名,ユーザーのリンクurl\n";
+    let csvContent = "抽出文字,ユーザー表示名,ユーザーのリンクurl,日程\n";
     data.forEach((item) => {
-      csvContent += `"${item.extracted}","${item.displayName}","${item.profileUrl}"\n`;
+      csvContent += `"${item.extracted}","${item.displayName}","${item.profileUrl}","${item.day}"\n`;
     });
     return csvContent;
   };
