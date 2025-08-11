@@ -12,6 +12,11 @@ export function removeWhitespace(str: string): string {
   return str.replace(/\s+/g, "");
 }
 
+// "ブロック"や"エリア"などの冗長な文字列を削除
+export function removeRedundantStrings(str: string): string {
+  return str.replace(/(ブロック|エリア)/g, "");
+}
+
 // 日程情報を抽出・正規化（複数日程に対応）
 export function extractDay(displayName: string): string {
   const normalizedName = toHalfWidth(displayName);
@@ -63,7 +68,9 @@ export function extractDay(displayName: string): string {
 
 // コミケ配置場所のパターンマッチングと変換
 export function extractAndConvertPattern(displayName: string): PatternMatch[] {
-  const normalizedName = removeWhitespace(toHalfWidth(displayName));
+  const normalizedName = removeRedundantStrings(
+    removeWhitespace(toHalfWidth(displayName))
+  );
   const matches: PatternMatch[] = [];
 
   // 日程情報を抽出
@@ -71,20 +78,8 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
 
   // 複数のパターンを試行
   const patterns = [
-    // パターン1: 東西南北 + エリア記号 + 数字 + ab (例: 西2す-16a, 東モ23b)
-    /([東西南北][1-7]?)\s*([あ-んア-ンA-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
-
-    // パターン2: 東西南北 + 数字 + エリア記号 + 数字 + ab (例: 西2"こ"-28a)
-    /([東西南北][1-7]?)\s*["'”]?([あ-んア-ンA-Za-z])["'”]?\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
-
-    // パターン3: エリア記号 + 数字 + ab のみ (例: す-16a, モ23b)
-    /([あ-んア-ンA-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
-
-    // パターン4: 数字 + エリア記号 + 数字 + ab (例: 7Q-05b)
-    /([0-9])\s*([A-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
-
-    // パターン5: アルファベット + 数字 + ab (例: Q-17b, R45b)
-    /([A-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    // パターン1: ブロック記号 + 数字 + ab (例: "こ"-28a)
+    /["'“”]?([あ-んア-ンA-Za-z])["'“”]?\s*[-ー_－]?\s*([0-9]{1,2})\s*([ab]+)/gi,
   ];
 
   for (const pattern of patterns) {
@@ -94,20 +89,10 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
     while ((match = pattern.exec(normalizedName)) !== null) {
       let converted = "";
 
-      if (match.length === 5) {
-        // パターン1,2: 4つのグループ
-        const area = match[1]; // 東西南北
-        const section = match[2]; // エリア記号
-        const number = match[3].padStart(2, "0"); // 数字を2桁に
-        const block = match[4]; // ab
-        converted = `${section}${number}${block}`;
-      } else if (match.length === 4) {
-        // パターン3,5: 3つのグループ
-        const section = match[1]; // エリア記号
-        const number = match[2].padStart(2, "0"); // 数字を2桁に
-        const block = match[3]; // ab
-        converted = `${section}${number}${block}`;
-      }
+      const block = match[1]; // ブロック記号
+      const number = match[2].padStart(2, "0"); // 数字を2桁に
+      const ab = match[3]; // ab
+      converted = `${block}${number}${ab}`;
 
       // 重複チェック
       const isDuplicate = matches.some(
