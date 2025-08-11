@@ -7,6 +7,11 @@ export function toHalfWidth(str: string): string {
   });
 }
 
+// 空白を削除
+export function removeWhitespace(str: string): string {
+  return str.replace(/\s+/g, "");
+}
+
 // 日程情報を抽出・正規化（複数日程に対応）
 export function extractDay(displayName: string): string {
   const normalizedName = toHalfWidth(displayName);
@@ -58,7 +63,7 @@ export function extractDay(displayName: string): string {
 
 // コミケ配置場所のパターンマッチングと変換
 export function extractAndConvertPattern(displayName: string): PatternMatch[] {
-  const normalizedName = toHalfWidth(displayName);
+  const normalizedName = removeWhitespace(toHalfWidth(displayName));
   const matches: PatternMatch[] = [];
 
   // 日程情報を抽出
@@ -70,7 +75,7 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
     /([東西南北][1-7]?)\s*([あ-んア-ンA-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
 
     // パターン2: 東西南北 + 数字 + エリア記号 + 数字 + ab (例: 西2"こ"-28a)
-    /([東西南北][1-7]?)\s*["']?([あ-んア-ンA-Za-z])["']?\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    /([東西南北][1-7]?)\s*["'”]?([あ-んア-ンA-Za-z])["'”]?\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
 
     // パターン3: エリア記号 + 数字 + ab のみ (例: す-16a, モ23b)
     /([あ-んア-ンA-Za-z])\s*[-ー_]?\s*([0-9]{1,2})\s*([ab]+)/gi,
