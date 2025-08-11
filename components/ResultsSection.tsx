@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Code,
+  createToaster,
   Heading,
   SimpleGrid,
   Text,
@@ -9,6 +10,10 @@ import {
 } from "@chakra-ui/react";
 import React from "react";
 import { ExtractedData } from "../lib/types";
+
+const toaster = createToaster({
+  placement: "top",
+});
 
 interface ResultsSectionProps {
   data: ExtractedData[];
@@ -33,7 +38,12 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({
 
   const downloadCSV = () => {
     if (data.length === 0) {
-      alert("まずデータを処理してください");
+      toaster.create({
+        title: "データなし",
+        description: "まずデータを処理してください",
+        type: "warning",
+        duration: 3000,
+      });
       return;
     }
 
@@ -55,6 +65,14 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({
 
     // Clean up
     URL.revokeObjectURL(url);
+
+    // Success toast
+    toaster.create({
+      title: "ダウンロード完了",
+      description: `CSVファイルをダウンロードしました (${data.length}件)`,
+      type: "success",
+      duration: 3000,
+    });
   };
 
   return (

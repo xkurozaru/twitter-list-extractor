@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Container,
+  createToaster,
   Heading,
   HStack,
   Tabs,
@@ -16,6 +17,10 @@ import { ResultsSection } from "../components/ResultsSection";
 import { ScrapingTab } from "../components/ScrapingTab";
 import { extractAndConvertPattern } from "../lib/patternExtractor";
 import { ExtractedData, TwitterUser } from "../lib/types";
+
+const toaster = createToaster({
+  placement: "top",
+});
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"api" | "scraping" | "manual">(
@@ -39,7 +44,12 @@ export default function Home() {
 
   const processData = () => {
     if (!inputData.trim()) {
-      alert("データを入力してください");
+      toaster.create({
+        title: "入力エラー",
+        description: "データを入力してください",
+        type: "error",
+        duration: 3000,
+      });
       return;
     }
 
@@ -100,7 +110,6 @@ export default function Home() {
             <Heading
               size="2xl"
               bgGradient="linear(to-r, blue.400, purple.500)"
-              bgClip="text"
               mb={4}
             >
               🐦 Twitter自動リスト抽出ツール

@@ -1,6 +1,18 @@
-import { Box, Button, Heading, Input, Text, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  createToaster,
+  Heading,
+  Input,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import React, { useState } from "react";
 import { TwitterUser } from "../lib/types";
+
+const toaster = createToaster({
+  placement: "top",
+});
 
 interface ApiTabProps {
   onDataFetched: (data: TwitterUser[]) => void;
@@ -15,7 +27,12 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
 
   const handleFetch = async () => {
     if (!bearerToken.trim() || !listId.trim()) {
-      alert("Bearer Token と リストIDを入力してください");
+      toaster.create({
+        title: "入力エラー",
+        description: "Bearer Token と リストIDを入力してください",
+        type: "error",
+        duration: 5000,
+      });
       return;
     }
 
@@ -50,25 +67,45 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
 
       if (result.success && result.data) {
         onDataFetched(result.data);
-        alert(
-          `✅ ${result.data.length}人のメンバーを取得しました！\n手動入力タブに自動で移動します。`
-        );
+        toaster.create({
+          title: "取得成功",
+          description: `✅ ${result.data.length}人のメンバーを取得しました！\n手動入力タブに自動で移動します。`,
+          type: "success",
+          duration: 8000,
+        });
       } else {
         if (result.error?.includes("レート制限")) {
-          alert(
-            `⏰ ${result.error}\n\n15分程度時間をおいてから再試行してください。`
-          );
+          toaster.create({
+            title: "レート制限エラー",
+            description: `⏰ ${result.error}\n\n15分程度時間をおいてから再試行してください。`,
+            type: "warning",
+            duration: 10000,
+          });
         } else {
-          alert(`❌ エラー: ${result.error}`);
+          toaster.create({
+            title: "エラー",
+            description: `❌ エラー: ${result.error}`,
+            type: "error",
+            duration: 8000,
+          });
         }
       }
     } catch (error: any) {
       if (error.name === "AbortError") {
-        alert(
-          "⏰ タイムアウトしました。レート制限により処理に時間がかかっています。\n15分程度時間をおいてから再試行してください。"
-        );
+        toaster.create({
+          title: "タイムアウト",
+          description:
+            "⏰ タイムアウトしました。レート制限により処理に時間がかかっています。\n15分程度時間をおいてから再試行してください。",
+          type: "warning",
+          duration: 10000,
+        });
       } else {
-        alert(`❌ エラーが発生しました: ${error.message}`);
+        toaster.create({
+          title: "エラー",
+          description: `❌ エラーが発生しました: ${error.message}`,
+          type: "error",
+          duration: 8000,
+        });
       }
     } finally {
       setIsLoading(false);

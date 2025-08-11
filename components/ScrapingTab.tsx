@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  createToaster,
   Heading,
   HStack,
   Input,
@@ -10,6 +11,10 @@ import {
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { TwitterUser } from "../lib/types";
+
+const toaster = createToaster({
+  placement: "top",
+});
 
 interface ScrapingTabProps {
   onDataFetched: (data: TwitterUser[]) => void;
@@ -22,7 +27,12 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
 
   const handleFetch = async () => {
     if (!listUrl.trim()) {
-      alert("リストURLを入力してください");
+      toaster.create({
+        title: "入力エラー",
+        description: "リストURLを入力してください",
+        type: "error",
+        duration: 3000,
+      });
       return;
     }
 
@@ -44,12 +54,27 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
 
       if (result.success && result.data) {
         onDataFetched(result.data);
-        alert(`${result.data.length}人のメンバーを取得しました！`);
+        toaster.create({
+          title: "取得成功",
+          description: `${result.data.length}人のメンバーを取得しました！`,
+          type: "success",
+          duration: 5000,
+        });
       } else {
-        alert(`エラー: ${result.error}`);
+        toaster.create({
+          title: "エラー",
+          description: `エラー: ${result.error}`,
+          type: "error",
+          duration: 5000,
+        });
       }
     } catch (error: any) {
-      alert(`エラーが発生しました: ${error.message}`);
+      toaster.create({
+        title: "エラー",
+        description: `エラーが発生しました: ${error.message}`,
+        type: "error",
+        duration: 5000,
+      });
     } finally {
       setIsLoading(false);
     }
