@@ -1,7 +1,7 @@
+import { toaster } from "@/components/ui/toaster";
 import {
   Box,
   Button,
-  createToaster,
   Heading,
   HStack,
   Input,
@@ -11,10 +11,6 @@ import {
 } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { TwitterUser } from "../lib/types";
-
-const toaster = createToaster({
-  placement: "top",
-});
 
 interface ScrapingTabProps {
   onDataFetched: (data: TwitterUser[]) => void;

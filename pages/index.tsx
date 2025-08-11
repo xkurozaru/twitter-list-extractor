@@ -1,8 +1,8 @@
+import { toaster } from "@/components/ui/toaster";
 import {
   Box,
   Button,
   Container,
-  createToaster,
   Heading,
   HStack,
   Tabs,
@@ -18,10 +18,6 @@ import { ScrapingTab } from "../components/ScrapingTab";
 import { extractAndConvertPattern } from "../lib/patternExtractor";
 import { ExtractedData, TwitterUser } from "../lib/types";
 
-const toaster = createToaster({
-  placement: "top",
-});
-
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"api" | "scraping" | "manual">(
     "api"
@@ -31,6 +27,8 @@ export default function Home() {
   const [showResults, setShowResults] = useState(false);
 
   const handleDataFetched = (members: TwitterUser[]) => {
+    console.log("取得したメンバー数:", members.length);
+
     const inputText = members
       .map(
         (member) =>
@@ -38,8 +36,15 @@ export default function Home() {
       )
       .join("\n");
 
+    console.log("生成されたinputText:", inputText.substring(0, 200) + "...");
+
     setInputData(inputText);
-    setActiveTab("manual");
+
+    // データ設定後に少し遅延してからタブを切り替え
+    setTimeout(() => {
+      setActiveTab("manual");
+      console.log("手動入力タブに切り替えました");
+    }, 100);
   };
 
   const processData = () => {

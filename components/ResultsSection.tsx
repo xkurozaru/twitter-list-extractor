@@ -1,8 +1,8 @@
+import { toaster } from "@/components/ui/toaster";
 import {
   Box,
   Button,
   Code,
-  createToaster,
   Heading,
   SimpleGrid,
   Text,
@@ -10,10 +10,6 @@ import {
 } from "@chakra-ui/react";
 import React from "react";
 import { ExtractedData } from "../lib/types";
-
-const toaster = createToaster({
-  placement: "top",
-});
 
 interface ResultsSectionProps {
   data: ExtractedData[];

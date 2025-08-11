@@ -1,18 +1,7 @@
-import {
-  Box,
-  Button,
-  createToaster,
-  Heading,
-  Input,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
+import { toaster } from "@/components/ui/toaster";
+import { Box, Button, Heading, Input, Text, VStack } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { TwitterUser } from "../lib/types";
-
-const toaster = createToaster({
-  placement: "top",
-});
 
 interface ApiTabProps {
   onDataFetched: (data: TwitterUser[]) => void;
@@ -226,16 +215,18 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
       </Box>
 
       {/* Action Button */}
-      <Button
-        size="lg"
-        colorScheme="blue"
-        onClick={handleFetch}
-        disabled={isLoading}
-        loading={isLoading}
-        w="full"
-      >
-        {isLoading ? loadingMessage : "🚀 全メンバー取得"}
-      </Button>
+      <VStack gap={3}>
+        <Button
+          size="lg"
+          colorScheme="blue"
+          onClick={handleFetch}
+          disabled={isLoading}
+          loading={isLoading}
+          w="full"
+        >
+          {isLoading ? loadingMessage : "🚀 全メンバー取得"}
+        </Button>
+      </VStack>
     </VStack>
   );
 };

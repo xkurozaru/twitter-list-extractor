@@ -140,9 +140,9 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
 
 // CSVファイル生成（新しいカラム追加）
 export function generateCSV(data: any[]): string {
-  let csvContent = "\ufeff抽出文字,ユーザー表示名,ユーザーのリンクurl,日程\n";
+  let csvContent = "\ufeff日程,抽出文字,ユーザー表示名,ユーザーのリンクurl\n";
   data.forEach((item) => {
-    csvContent += `"${item.extracted}","${item.displayName}","${item.profileUrl}","${item.day}"\n`;
+    csvContent += `"${item.day}","${item.extracted}","${item.displayName}","${item.profileUrl}"\n`;
   });
   return csvContent;
 }
