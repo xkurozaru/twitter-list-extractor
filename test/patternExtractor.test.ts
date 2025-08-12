@@ -22,7 +22,7 @@ describe("patternExtractor", () => {
       expect(result[0]).toMatchObject({
         original: "す-16a",
         converted: "す16a",
-        startIndex: 20,
+        startIndex: 21,
         day: "1日目",
       });
     });
@@ -35,7 +35,7 @@ describe("patternExtractor", () => {
       expect(result[0]).toMatchObject({
         original: "“s”05a",
         converted: "s05a",
-        startIndex: 12,
+        startIndex: 13,
         day: "1日目",
       });
     });
@@ -48,7 +48,42 @@ describe("patternExtractor", () => {
       expect(result[0]).toMatchObject({
         original: "“b”－06a",
         converted: "b06a",
-        startIndex: 11,
+        startIndex: 13,
+        day: "1日目",
+      });
+    });
+
+    test("栗芋パイ　日曜東Q‐23b", () => {
+      const result = extractAndConvertPattern("栗芋パイ　日曜東Q‐23b");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        original: "Q‐23b",
+        converted: "Q23b",
+        startIndex: 8,
+        day: "2日目",
+      });
+    });
+
+    test("カネダイチ@土曜日（西）''に''14b", () => {
+      const result = extractAndConvertPattern(
+        "カネダイチ@土曜日（西）''に''14b"
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        original: "''に''14b",
+        converted: "に14b",
+        startIndex: 12,
+        day: "1日目",
+      });
+    });
+
+    test("イロリ@C106土曜日“西すｰ18b”", () => {
+      const result = extractAndConvertPattern("イロリ@C106土曜日“西すｰ18b”");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        original: "すｰ18b",
+        converted: "す18b",
+        startIndex: 13,
         day: "1日目",
       });
     });

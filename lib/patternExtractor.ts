@@ -72,7 +72,7 @@ export function extractAndConvertPattern(displayName: string): PatternMatch[] {
   // 複数のパターンを試行
   const patterns = [
     // パターン1: ブロック記号 + 数字 + ab (例: "こ"-28a)
-    /["'“”]?([あ-んア-ンA-Za-z])["'“”]?\s*[-ー_－]?\s*([0-9]{1,2})\s*([ab]+)/gi,
+    /["'“”]?["'“”]?([あ-んア-ンA-Za-z])["'“”]?["'“”]?\s*[-ー_－‐ｰ]?\s*([0-9]{1,2})\s*([ab]+)/gi,
   ];
 
   for (const pattern of patterns) {
