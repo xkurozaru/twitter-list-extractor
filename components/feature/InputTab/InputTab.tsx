@@ -29,12 +29,18 @@ export const InputTab: React.FC<InputTabProps> = ({
 
       {/* Action Buttons */}
       <HStack gap={4} w="full" justify="center">
-        <Button size="lg" colorScheme="blue" onClick={processData}>
+        <Button
+          size="lg"
+          w={"calc(100% / 2 - 8px)"}
+          colorPalette="blue"
+          onClick={processData}
+        >
           🔍 パターン抽出処理
         </Button>
         <Button
           size="lg"
-          colorScheme="red"
+          w={"calc(100% / 2 - 8px)"}
+          colorPalette="gray"
           variant="outline"
           onClick={clearAll}
         >

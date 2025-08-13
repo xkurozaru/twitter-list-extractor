@@ -105,9 +105,9 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
       <Button
         onClick={handleFetch}
         disabled={isLoading}
-        colorScheme="blue"
         size="lg"
         w="full"
+        colorPalette="blue"
       >
         {isLoading ? (
           <HStack>

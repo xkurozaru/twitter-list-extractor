@@ -258,18 +258,16 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
       )}
 
       {/* Action Button */}
-      <VStack gap={3}>
-        <Button
-          size="lg"
-          colorScheme="blue"
-          onClick={handleFetchWithEventSource}
-          disabled={isLoading}
-          loading={isLoading}
-          w="full"
-        >
-          {isLoading ? loadingMessage : "🚀 全メンバー取得"}
-        </Button>
-      </VStack>
+      <Button
+        size="lg"
+        w="full"
+        colorPalette="blue"
+        onClick={handleFetchWithEventSource}
+        disabled={isLoading}
+        loading={isLoading}
+      >
+        {isLoading ? loadingMessage : "🚀 全メンバー取得"}
+      </Button>
     </VStack>
   );
 };

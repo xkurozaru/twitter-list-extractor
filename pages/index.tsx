@@ -1,8 +1,9 @@
 import { ApiTab } from "@/components/feature/ApiTab";
+import { IndexHeader } from "@/components/feature/Headers";
 import { InputTab } from "@/components/feature/InputTab";
 import { ScrapingTab } from "@/components/feature/ScrapingTab";
 import { toaster } from "@/components/ui/toaster";
-import { Box, Container, Heading, Tabs, Text, VStack } from "@chakra-ui/react";
+import { Box, Container, Tabs, VStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { extractAndConvertPattern } from "../lib/patternExtractor";
 import { ExtractedData, TwitterList } from "../lib/types";
@@ -82,67 +83,46 @@ export default function Home() {
   return (
     <Box
       minH="100vh"
-      bgGradient="linear(to-br, blue.400, purple.500)"
+      bgGradient="to-br"
+      gradientFrom="blue.400"
+      gradientTo="purple.500"
       py={8}
       px={4}
     >
       <Container maxW="6xl">
         <VStack gap={8}>
           {/* Header */}
-          <Box
-            bg="white"
-            shadow="xl"
-            rounded="2xl"
-            p={8}
-            textAlign="center"
-            w="full"
-          >
-            <Heading
-              size="2xl"
-              bgGradient="linear(to-r, blue.400, purple.500)"
-              mb={4}
-            >
-              🐦 Twitter自動リスト抽出ツール
-            </Heading>
-            <Text fontSize="lg" color="gray.600">
-              Twitterリストメンバーを自動取得し、特定パターンを抽出してスプレッドシート形式で出力
-            </Text>
-          </Box>
+          <IndexHeader />
 
           {/* Main Content */}
           <Box bg="white" shadow="xl" rounded="2xl" p={8} w="full">
-            <VStack gap={6}>
-              {/* Tabs */}
-              <Tabs.Root
-                value={activeTab}
-                w="full"
-                onValueChange={(e) => setActiveTab(e.value as any)}
-              >
-                <Tabs.List>
-                  <Tabs.Trigger value="api">🔑 API取得</Tabs.Trigger>
-                  <Tabs.Trigger value="scraping">
-                    🕷️ スクレイピング
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="input">✋ データ入力</Tabs.Trigger>
-                </Tabs.List>
-                <Tabs.Content value="api">
-                  <ApiTab onDataFetched={handleDataFetched} />
-                </Tabs.Content>
-                <Tabs.Content value="scraping">
-                  <ScrapingTab onDataFetched={handleDataFetched} />
-                </Tabs.Content>
-                <Tabs.Content value="input">
-                  <InputTab
-                    inputData={inputData}
-                    onInputChange={setInputData}
-                    processData={processData}
-                    clearAll={clearAll}
-                    showResults={showResults}
-                    data={processedData}
-                  />
-                </Tabs.Content>
-              </Tabs.Root>
-            </VStack>
+            <Tabs.Root
+              value={activeTab}
+              w="full"
+              onValueChange={(e) => setActiveTab(e.value as any)}
+            >
+              <Tabs.List>
+                <Tabs.Trigger value="api">🔑 API取得</Tabs.Trigger>
+                <Tabs.Trigger value="scraping">🕷️ スクレイピング</Tabs.Trigger>
+                <Tabs.Trigger value="input">✋ データ入力</Tabs.Trigger>
+              </Tabs.List>
+              <Tabs.Content value="api">
+                <ApiTab onDataFetched={handleDataFetched} />
+              </Tabs.Content>
+              <Tabs.Content value="scraping">
+                <ScrapingTab onDataFetched={handleDataFetched} />
+              </Tabs.Content>
+              <Tabs.Content value="input">
+                <InputTab
+                  inputData={inputData}
+                  onInputChange={setInputData}
+                  processData={processData}
+                  clearAll={clearAll}
+                  showResults={showResults}
+                  data={processedData}
+                />
+              </Tabs.Content>
+            </Tabs.Root>
           </Box>
         </VStack>
       </Container>

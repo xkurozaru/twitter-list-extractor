@@ -65,7 +65,7 @@ export const RequestForm: React.FC<RequestFormProps> = ({
         <Box w="full">
           <Checkbox.Root onCheckedChange={(e) => setUseLogin(!!e.checked)}>
             <Checkbox.HiddenInput />
-            <Checkbox.Control />
+            <Checkbox.Control colorPalette="blue" />
             <Checkbox.Label>Xアカウントでログインする</Checkbox.Label>
           </Checkbox.Root>
           <Text fontSize="sm" color="gray.600" mt={1}>
