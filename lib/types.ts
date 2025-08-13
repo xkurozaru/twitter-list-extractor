@@ -2,11 +2,6 @@ export interface TwitterList {
   id: string | number;
   name: string;
   username: string;
-  bio?: string;
-  profileUrl?: string;
-  followersCount: number;
-  followingCount: number;
-  tweetCount: number;
 }
 
 export interface ExtractedData {

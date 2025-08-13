@@ -7,7 +7,6 @@ interface TwitterApiResponse {
     id: string;
     name: string;
     username: string;
-    public_metrics?: any;
   }>;
   meta: {
     result_count: number;
@@ -220,7 +219,7 @@ export default async function handler(
         break;
       }
 
-      let url = `https://api.twitter.com/2/lists/${listId}/members?max_results=100&user.fields=name,username,public_metrics`;
+      let url = `https://api.twitter.com/2/lists/${listId}/members?max_results=100&user.fields=name,username`;
       if (nextToken) {
         url += `&pagination_token=${nextToken}`;
       }
@@ -354,9 +353,6 @@ export default async function handler(
             id: user.id,
             name: user.name,
             username: user.username,
-            followersCount: user.public_metrics?.followers_count || 0,
-            followingCount: user.public_metrics?.following_count || 0,
-            tweetCount: user.public_metrics?.tweet_count || 0,
           })
         );
 

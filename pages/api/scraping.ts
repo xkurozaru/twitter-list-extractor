@@ -345,7 +345,7 @@ export default async function handler(
 
         // 現在表示されているユーザー情報を取得
         const currentMembers = await page.evaluate(() => {
-          const members: any[] = [];
+          const members: TwitterList[] = [];
           const userCells = document.querySelectorAll(
             'div[role="dialog"] button[data-testid="UserCell"]'
           );
@@ -398,10 +398,6 @@ export default async function handler(
                   id: Date.now() + Math.random() + index,
                   name: displayName,
                   username: username,
-                  profileUrl: `https://x.com/${username}`,
-                  followersCount: 0,
-                  followingCount: 0,
-                  tweetCount: 0,
                 });
               }
             } catch (error) {
@@ -481,7 +477,7 @@ export default async function handler(
         );
 
         const newMembers = await page.evaluate(() => {
-          const members: any[] = [];
+          const members: TwitterList[] = [];
           const userCells = document.querySelectorAll(
             'button[data-testid="UserCell"]'
           );
@@ -531,10 +527,6 @@ export default async function handler(
                   id: Date.now() + Math.random() + index,
                   name: displayName,
                   username: username,
-                  profileUrl: `https://x.com/${username}`,
-                  followersCount: 0,
-                  followingCount: 0,
-                  tweetCount: 0,
                 });
               }
             } catch (error) {

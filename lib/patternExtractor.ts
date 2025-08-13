@@ -9,7 +9,7 @@ export function toHalfWidth(str: string): string {
 
 // "ブロック"や"エリア"などの冗長な文字列を削除
 export function removeRedundantStrings(str: string): string {
-  return str.replace(/(ブロック|エリア)/g, "");
+  return str.replace(/(ブロック|エリア|ホール)/g, "");
 }
 
 // 日程情報を抽出・正規化（複数日程に対応）
