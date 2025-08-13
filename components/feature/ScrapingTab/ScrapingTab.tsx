@@ -73,10 +73,12 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
           duration: 5000,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       toaster.create({
         title: "エラー",
-        description: `エラーが発生しました: ${error.message}`,
+        description: `エラーが発生しました: ${errorMessage}`,
         type: "error",
         duration: 5000,
       });

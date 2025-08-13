@@ -99,7 +99,9 @@ export default function Home() {
             <Tabs.Root
               value={activeTab}
               w="full"
-              onValueChange={(e) => setActiveTab(e.value as any)}
+              onValueChange={(e) =>
+                setActiveTab(e.value as "api" | "scraping" | "input")
+              }
             >
               <Tabs.List>
                 <Tabs.Trigger value="api">🔑 API取得</Tabs.Trigger>
