@@ -62,7 +62,7 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
         clearInterval(interval);
       }
     };
-  }, [isWaiting]); // clientWaitTime を依存配列から除外
+  }, [isWaiting, clientWaitTime]); // clientWaitTime を依存配列に追加
 
   const handleFetchWithEventSource = async () => {
     console.log("handleFetchWithEventSource called");
@@ -176,7 +176,7 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
             });
             return;
           }
-        } catch (parseError) {
+        } catch (parseError: unknown) {
           console.error(
             "Failed to parse SSE data:",
             event.data,
@@ -212,10 +212,15 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           duration: 8000,
         });
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[EventSource] Catch block error:", error);
       setIsLoading(false);
-      if (error.name === "AbortError") {
+      if (
+        error &&
+        typeof error === "object" &&
+        "name" in error &&
+        error.name === "AbortError"
+      ) {
         toaster.create({
           title: "タイムアウト",
           description:
@@ -224,9 +229,13 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           duration: 10000,
         });
       } else {
+        const errorMessage =
+          error && typeof error === "object" && "message" in error
+            ? String(error.message)
+            : "不明なエラー";
         toaster.create({
           title: "エラー",
-          description: `❌ エラーが発生しました: ${error.message}`,
+          description: `❌ エラーが発生しました: ${errorMessage}`,
           type: "error",
           duration: 8000,
         });

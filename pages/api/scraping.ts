@@ -31,7 +31,7 @@ export default async function handler(
     ) {
       throw new Error("Invalid domain");
     }
-  } catch (error) {
+  } catch {
     return res.status(400).json({
       success: false,
       error: "有効なTwitter/XのURLを入力してください",
@@ -96,7 +96,7 @@ export default async function handler(
               console.log(`ユーザー名入力フィールド発見: ${selector}`);
               break;
             }
-          } catch (e) {
+          } catch {
             console.log(`ユーザー名セレクタ ${selector} で失敗`);
           }
         }
@@ -142,11 +142,8 @@ export default async function handler(
               }
             }
             if (nextButtonClicked) break;
-          } catch (e) {
-            console.log(
-              `Failed with selector ${selector}:`,
-              (e as Error).message
-            );
+          } catch {
+            console.log(`Failed with selector ${selector}`);
           }
         }
 
@@ -175,7 +172,7 @@ export default async function handler(
               console.log(`パスワード入力フィールド発見: ${selector}`);
               break;
             }
-          } catch (e) {
+          } catch {
             console.log(`パスワードセレクタ ${selector} で失敗`);
           }
         }
@@ -204,7 +201,7 @@ export default async function handler(
               break;
             }
           }
-        } catch (e) {
+        } catch {
           console.log("Enterキーでログイン試行");
           await page.keyboard.press("Enter");
         }
@@ -281,11 +278,8 @@ export default async function handler(
             }
           }
           if (membersModalOpened) break;
-        } catch (e) {
-          console.log(
-            `Failed with selector ${selector}:`,
-            (e as Error).message
-          );
+        } catch {
+          console.log(`Failed with selector ${selector}`);
         }
       }
 
@@ -307,8 +301,8 @@ export default async function handler(
         await new Promise((resolve) => setTimeout(resolve, 2000));
         membersModalOpened = true;
       }
-    } catch (e) {
-      console.log("メンバーボタンクリックでエラー:", e);
+    } catch {
+      console.log("メンバーボタンクリックでエラーが発生しました");
     }
 
     // メンバー情報を取得
@@ -321,7 +315,7 @@ export default async function handler(
       try {
         await page.waitForSelector('div[role="dialog"]', { timeout: 5000 });
         console.log("モーダルが確認されました");
-      } catch (e) {
+      } catch {
         console.log("モーダルが見つからないため、ページから取得します");
         membersModalOpened = false;
       }
@@ -410,9 +404,9 @@ export default async function handler(
 
         // 新しいユーザーのみを追加
         const newMembers = currentMembers.filter(
-          (member: any) => !collectedUsernames.has(member.username)
+          (member: TwitterList) => !collectedUsernames.has(member.username)
         );
-        newMembers.forEach((member: any) => {
+        newMembers.forEach((member: TwitterList) => {
           allMembers.push(member);
           collectedUsernames.add(member.username);
         });
@@ -539,7 +533,7 @@ export default async function handler(
 
         const existingUsernames = new Set(allMembers.map((m) => m.username));
         const uniqueNewMembers = newMembers.filter(
-          (m: any) => !existingUsernames.has(m.username)
+          (m: TwitterList) => !existingUsernames.has(m.username)
         );
         allMembers.push(...uniqueNewMembers);
 
@@ -582,11 +576,13 @@ export default async function handler(
           "メンバーが見つかりませんでした。リストが非公開またはメンバーがいない可能性があります。",
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("スクレイピングエラー:", error);
     res.status(500).json({
       success: false,
-      error: `スクレイピング中にエラーが発生しました: ${error.message}`,
+      error: `スクレイピング中にエラーが発生しました: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     });
   } finally {
     if (browser) {

@@ -21,7 +21,7 @@ interface ProgressUpdate {
   maxRequests: number;
   status: string;
   waitTime?: number;
-  data?: any[];
+  data?: TwitterList[];
   error?: string;
 }
 
@@ -75,7 +75,7 @@ export default async function handler(
   // 初期接続確認のためのpingを送信
   res.write(": ping\n\n");
   // NextApiResponseはNode.jsのServerResponseをextendしているため、キャストして使用
-  const nodeRes = res as any;
+  const nodeRes = res as typeof res & { flush?: () => void };
   if (nodeRes.flush) nodeRes.flush();
 
   console.log("[API] SSE headers set successfully");
@@ -88,7 +88,10 @@ export default async function handler(
     try {
       res.write(message);
       // 強制的にデータを送信
-      const nodeRes = res as any;
+      const nodeRes = res as typeof res & {
+        flush?: () => void;
+        flushHeaders?: () => void;
+      };
       if (nodeRes.flush) {
         nodeRes.flush();
         console.log("[SSE] Flushed successfully");
@@ -236,7 +239,7 @@ export default async function handler(
       let retryCount = 0;
       const maxRetries = 3;
       let success = false;
-      let response: any;
+      let response: { data: TwitterApiResponse } | undefined;
 
       while (!success && retryCount < maxRetries) {
         try {
@@ -248,70 +251,76 @@ export default async function handler(
             timeout: 30000,
           });
           success = true;
-        } catch (error: any) {
+        } catch (error: unknown) {
           retryCount++;
 
-          if (error.response?.status === 429) {
-            const resetTime = error.response.headers["x-rate-limit-reset"];
-            console.warn(
-              `[API] レート制限に達しました。x-rate-limit-reset: ${resetTime}`
-            );
-            const waitTime = resetTime
-              ? Math.max(parseInt(resetTime) * 1000 - Date.now(), 60000)
-              : Math.pow(2, retryCount) * 60000;
+          if (error && typeof error === "object" && "response" in error) {
+            const axiosError = error as {
+              response?: { status?: number; headers?: Record<string, string> };
+            };
+            if (axiosError.response?.status === 429) {
+              const resetTime =
+                axiosError.response.headers?.["x-rate-limit-reset"];
+              console.warn(
+                `[API] レート制限に達しました。x-rate-limit-reset: ${resetTime}`
+              );
+              const waitTime = resetTime
+                ? Math.max(parseInt(resetTime) * 1000 - Date.now(), 60000)
+                : Math.pow(2, retryCount) * 60000;
 
-            const waitMinutes = Math.ceil(waitTime / 60000);
+              const waitMinutes = Math.ceil(waitTime / 60000);
 
-            sendProgress({
-              type: "progress",
-              currentCount: allMembers.length,
-              currentRequest: requestCount,
-              maxRequests,
-              status: `レート制限のため ${waitMinutes}分待機中... (再試行 ${retryCount}/${maxRetries})`,
-              waitTime: waitTime,
-            });
-
-            if (retryCount < maxRetries) {
-              // 待機時間を30秒ごとに更新
-              let remainingTime = waitTime;
-              const startTime = Date.now();
-
-              const updateInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                remainingTime = Math.max(0, waitTime - elapsed);
-                const remainingMinutes = Math.ceil(remainingTime / 60000);
-
-                if (remainingTime > 0) {
-                  sendProgress({
-                    type: "progress",
-                    currentCount: allMembers.length,
-                    currentRequest: requestCount,
-                    maxRequests,
-                    status: `レート制限のため ${remainingMinutes}分待機中... (再試行 ${retryCount}/${maxRetries})`,
-                    waitTime: remainingTime,
-                  });
-                } else {
-                  clearInterval(updateInterval);
-                }
-              }, 30000); // 30秒ごとに更新
-
-              await new Promise((resolve) => {
-                setTimeout(() => {
-                  clearInterval(updateInterval);
-                  resolve(void 0);
-                }, waitTime);
-              });
-            } else {
-              console.error("[API] Rate limit exceeded, max retries reached");
               sendProgress({
-                type: "error",
+                type: "progress",
                 currentCount: allMembers.length,
                 currentRequest: requestCount,
                 maxRequests,
-                status: "レート制限エラー",
-                error: `レート制限により失敗しました。取得済み: ${allMembers.length}人。15分程度時間をおいてから再試行してください。`,
+                status: `レート制限のため ${waitMinutes}分待機中... (再試行 ${retryCount}/${maxRetries})`,
+                waitTime: waitTime,
               });
-              return; // ここで処理を終了
+
+              if (retryCount < maxRetries) {
+                // 待機時間を30秒ごとに更新
+                let remainingTime = waitTime;
+                const startTime = Date.now();
+
+                const updateInterval = setInterval(() => {
+                  const elapsed = Date.now() - startTime;
+                  remainingTime = Math.max(0, waitTime - elapsed);
+                  const remainingMinutes = Math.ceil(remainingTime / 60000);
+
+                  if (remainingTime > 0) {
+                    sendProgress({
+                      type: "progress",
+                      currentCount: allMembers.length,
+                      currentRequest: requestCount,
+                      maxRequests,
+                      status: `レート制限のため ${remainingMinutes}分待機中... (再試行 ${retryCount}/${maxRetries})`,
+                      waitTime: remainingTime,
+                    });
+                  } else {
+                    clearInterval(updateInterval);
+                  }
+                }, 30000); // 30秒ごとに更新
+
+                await new Promise((resolve) => {
+                  setTimeout(() => {
+                    clearInterval(updateInterval);
+                    resolve(void 0);
+                  }, waitTime);
+                });
+              } else {
+                console.error("[API] Rate limit exceeded, max retries reached");
+                sendProgress({
+                  type: "error",
+                  currentCount: allMembers.length,
+                  currentRequest: requestCount,
+                  maxRequests,
+                  status: "レート制限エラー",
+                  error: `レート制限により失敗しました。取得済み: ${allMembers.length}人。15分程度時間をおいてから再試行してください。`,
+                });
+                return; // ここで処理を終了
+              }
             }
           } else {
             if (retryCount < maxRetries) {
@@ -331,15 +340,17 @@ export default async function handler(
                 "[API] Max retries reached for non-rate-limit error:",
                 error
               );
+              const errorMessage =
+                error && typeof error === "object" && "message" in error
+                  ? String(error.message)
+                  : "不明なエラー";
               sendProgress({
                 type: "error",
                 currentCount: allMembers.length,
                 currentRequest: requestCount,
                 maxRequests,
                 status: "APIエラー",
-                error: `API呼び出しに失敗しました: ${
-                  error.message || "不明なエラー"
-                }。取得済み: ${allMembers.length}人`,
+                error: `API呼び出しに失敗しました: ${errorMessage}。取得済み: ${allMembers.length}人`,
               });
               return; // ここで処理を終了
             }
@@ -349,7 +360,7 @@ export default async function handler(
 
       if (response?.data?.data) {
         const newMembers: TwitterList[] = response.data.data.map(
-          (user: any) => ({
+          (user: { id: string; name: string; username: string }) => ({
             id: user.id,
             name: user.name,
             username: user.username,
@@ -392,28 +403,44 @@ export default async function handler(
       status: "取得完了！",
       data: allMembers,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[API] Unexpected error occurred:", error);
 
     // エラーの種類に応じて適切なメッセージを設定
     let errorMessage = "予期しないエラーが発生しました";
 
-    if (error.message?.includes("レート制限")) {
-      errorMessage = error.message;
-    } else if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
-      errorMessage =
-        "ネットワーク接続エラーが発生しました。インターネット接続を確認してください。";
-    } else if (error.response?.status === 401) {
-      errorMessage =
-        "認証エラー: Bearer Tokenが無効です。正しいトークンを入力してください。";
-    } else if (error.response?.status === 403) {
-      errorMessage =
-        "アクセス権限がありません。APIキーの権限を確認してください。";
-    } else if (error.response?.status === 404) {
-      errorMessage =
-        "指定されたリストが見つかりません。リストIDを確認してください。";
-    } else if (error.message) {
-      errorMessage = error.message;
+    if (error && typeof error === "object") {
+      if ("message" in error && typeof error.message === "string") {
+        if (error.message.includes("レート制限")) {
+          errorMessage = error.message;
+        } else if ("code" in error) {
+          const errorCode = error.code;
+          if (errorCode === "ENOTFOUND" || errorCode === "ECONNREFUSED") {
+            errorMessage =
+              "ネットワーク接続エラーが発生しました。インターネット接続を確認してください。";
+          } else {
+            errorMessage = error.message;
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object"
+      ) {
+        const response = error.response as { status?: number };
+        if (response.status === 401) {
+          errorMessage =
+            "認証エラー: Bearer Tokenが無効です。正しいトークンを入力してください。";
+        } else if (response.status === 403) {
+          errorMessage =
+            "アクセス権限がありません。APIキーの権限を確認してください。";
+        } else if (response.status === 404) {
+          errorMessage =
+            "指定されたリストが見つかりません。リストIDを確認してください。";
+        }
+      }
     }
 
     sendProgress({

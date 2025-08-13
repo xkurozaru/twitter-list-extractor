@@ -38,9 +38,9 @@ export const Instructions: React.FC = () => {
         </Text>
         <Text color="orange.600">
           Twitter APIには15分間で最大75回のリクエスト制限があります。
-          大きなリストの場合、自動的に待機時間を設けて取得を続行します。 "Too
-          Many
-          Requests"エラーが発生した場合は、15分程度時間をおいてから再試行してください。
+          大きなリストの場合、自動的に待機時間を設けて取得を続行します。
+          &quot;Too ManyRequests&quot;
+          エラーが発生した場合は、15分程度時間をおいてから再試行してください。
         </Text>
       </Box>
     </>
