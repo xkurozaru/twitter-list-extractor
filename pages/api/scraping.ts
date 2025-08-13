@@ -12,7 +12,7 @@ export default async function handler(
       .json({ success: false, error: "Method not allowed" });
   }
 
-  const { listUrl, maxMembers = 100, username, password } = req.body;
+  const { listUrl, maxMembers, username, password } = req.body;
 
   if (!listUrl) {
     return res.status(400).json({

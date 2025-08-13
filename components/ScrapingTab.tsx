@@ -3,6 +3,7 @@ import { TwitterList } from "@/lib/types";
 import {
   Box,
   Button,
+  Checkbox,
   Heading,
   HStack,
   Input,
@@ -18,7 +19,7 @@ interface ScrapingTabProps {
 
 export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
   const [listUrl, setListUrl] = useState("");
-  const [maxMembers, setMaxMembers] = useState(100);
+  const [maxMembers, setMaxMembers] = useState(500);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [useLogin, setUseLogin] = useState(false);
@@ -148,31 +149,24 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
             <Input
               type="number"
               value={maxMembers}
-              onChange={(e) => setMaxMembers(parseInt(e.target.value) || 100)}
-              min={1}
+              onChange={(e) => setMaxMembers(parseInt(e.target.value))}
+              min={100}
               max={1000}
+              step={100}
               placeholder="100"
               bg="white"
             />
           </Box>
 
           <Box w="full">
-            <label>
-              <input
-                type="checkbox"
-                checked={useLogin}
-                onChange={(e) => setUseLogin(e.target.checked)}
-                style={{ marginRight: "8px" }}
-              />
-              <Text as="span" fontWeight="medium">
-                Xアカウントでログインする
-              </Text>
-            </label>
-            {useLogin && (
-              <Text fontSize="sm" color="gray.600" mt={1}>
-                認証情報はスクレイピング処理中のみ使用され、保存されません。
-              </Text>
-            )}
+            <Checkbox.Root onCheckedChange={(e) => setUseLogin(!!e.checked)}>
+              <Checkbox.HiddenInput />
+              <Checkbox.Control />
+              <Checkbox.Label>Xアカウントでログインする</Checkbox.Label>
+            </Checkbox.Root>
+            <Text fontSize="sm" color="gray.600" mt={1}>
+              認証情報はスクレイピング処理中のみ使用され、保存されません。
+            </Text>
           </Box>
 
           {useLogin && (

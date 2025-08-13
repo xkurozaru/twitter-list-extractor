@@ -126,6 +126,7 @@ export default function Home() {
               {/* Tabs */}
               <Tabs.Root
                 value={activeTab}
+                w="full"
                 onValueChange={(e) => setActiveTab(e.value as any)}
               >
                 <Tabs.List>
@@ -148,9 +149,7 @@ export default function Home() {
                       inputData={inputData}
                       onInputChange={setInputData}
                     />
-
                     <PatternInfo />
-
                     {/* Action Buttons */}
                     <HStack gap={4} w="full" justify="center">
                       <Button
@@ -169,7 +168,6 @@ export default function Home() {
                         🗑️ すべてクリア
                       </Button>
                     </HStack>
-
                     {showResults && (
                       <ResultsSection
                         data={processedData}

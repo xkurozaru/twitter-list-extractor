@@ -2,9 +2,13 @@ import { toaster } from "@/components/ui/toaster";
 import {
   Box,
   Button,
+  createListCollection,
   Heading,
   Input,
   Link,
+  Portal,
+  Progress,
+  Select,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -20,7 +24,7 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
   const [listId, setListId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("取得中...");
-  const [maxRequests, setMaxRequests] = useState(15);
+  const [maxRequests, setMaxRequests] = useState(5);
   const [currentCount, setCurrentCount] = useState(0);
   const [currentRequest, setCurrentRequest] = useState(0);
   const [waitTime, setWaitTime] = useState(0);
@@ -368,26 +372,37 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
           </Box>
 
           <Box w="full">
-            <Text fontWeight="semibold" mb={2}>
-              最大リクエスト数 (レート制限対策)
-            </Text>
-            <select
-              style={{
-                width: "100%",
-                padding: "12px",
-                backgroundColor: "white",
-                border: "1px solid #E2E8F0",
-                borderRadius: "6px",
-              }}
-              value={maxRequests}
-              onChange={(e) => setMaxRequests(parseInt(e.target.value))}
+            <Select.Root
+              collection={maxRequestsOptions}
+              width="100%"
+              value={[maxRequests.toString()]}
+              onValueChange={(e) => setMaxRequests(parseInt(e.items[0].value))}
             >
-              <option value="5">5回 (最大500人) - 最も安全</option>
-              <option value="10">10回 (最大1000人) - 安全</option>
-              <option value="15">15回 (最大1500人) - 推奨</option>
-              <option value="25">25回 (最大2500人) - 中程度</option>
-              <option value="50">50回 (最大5000人) - 上級者向け</option>
-            </select>
+              <Select.HiddenSelect />
+              <Select.Label fontWeight="semibold" mb={2}>
+                最大リクエスト数 (レート制限対策)
+              </Select.Label>
+              <Select.Control>
+                <Select.Trigger>
+                  <Select.ValueText placeholder="選択してください" />
+                </Select.Trigger>
+                <Select.IndicatorGroup>
+                  <Select.Indicator />
+                </Select.IndicatorGroup>
+              </Select.Control>
+              <Portal>
+                <Select.Positioner>
+                  <Select.Content>
+                    {maxRequestsOptions.items.map((option) => (
+                      <Select.Item item={option} key={option.value}>
+                        {option.label}
+                        <Select.ItemIndicator />
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Portal>
+            </Select.Root>
             <Text fontSize="sm" color="gray.600" mt={2}>
               レート制限を避けるため、少ない値から始めることをお勧めします
             </Text>
@@ -439,24 +454,20 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
                   API リクエスト進捗
                 </Text>
                 <Box display="flex" alignItems="center" gap={2}>
-                  <Box
+                  <Progress.Root
                     w="full"
-                    h="4px"
-                    bg="gray.200"
-                    rounded="full"
-                    overflow="hidden"
+                    value={(currentRequest / maxRequests) * 100}
+                    colorPalette="blue"
+                    striped
+                    animated
                   >
-                    <Box
-                      w={`${(currentRequest / maxRequests) * 100}%`}
-                      h="full"
-                      bg="blue.500"
-                      rounded="full"
-                      transition="width 0.3s ease"
-                    />
-                  </Box>
-                  <Text fontSize="sm" color="blue.600" fontWeight="semibold">
-                    {currentRequest}/{maxRequests}
-                  </Text>
+                    <Progress.Track>
+                      <Progress.Range />
+                    </Progress.Track>
+                    <Progress.ValueText fontWeight="semibold">
+                      {currentRequest}/{maxRequests}
+                    </Progress.ValueText>
+                  </Progress.Root>
                 </Box>
               </Box>
 
@@ -513,3 +524,13 @@ export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
     </VStack>
   );
 };
+
+const maxRequestsOptions = createListCollection({
+  items: [
+    { value: "5", label: "5回 (最大500人) - 最も安全" },
+    { value: "10", label: "10回 (最大1000人) - 安全" },
+    { value: "15", label: "15回 (最大1500人) - 推奨" },
+    { value: "25", label: "25回 (最大2500人) - 中程度" },
+    { value: "50", label: "50回 (最大5000人) - 上級者向け" },
+  ],
+});
