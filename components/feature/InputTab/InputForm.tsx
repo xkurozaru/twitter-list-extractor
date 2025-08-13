@@ -1,12 +1,12 @@
 import { Box, Heading, Text, Textarea, VStack } from "@chakra-ui/react";
 import React from "react";
 
-interface ManualTabProps {
+interface InputFormProps {
   inputData: string;
   onInputChange: (data: string) => void;
 }
 
-export const ManualTab: React.FC<ManualTabProps> = ({
+export const InputForm: React.FC<InputFormProps> = ({
   inputData,
   onInputChange,
 }) => {

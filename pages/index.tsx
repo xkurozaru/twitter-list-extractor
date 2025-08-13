@@ -1,25 +1,14 @@
+import { ApiTab } from "@/components/feature/ApiTab";
+import { InputTab } from "@/components/feature/InputTab";
+import { ScrapingTab } from "@/components/feature/ScrapingTab";
 import { toaster } from "@/components/ui/toaster";
-import {
-  Box,
-  Button,
-  Container,
-  Heading,
-  HStack,
-  Tabs,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
+import { Box, Container, Heading, Tabs, Text, VStack } from "@chakra-ui/react";
 import { useState } from "react";
-import { ApiTab } from "../components/ApiTab";
-import { ManualTab } from "../components/ManualTab";
-import { PatternInfo } from "../components/PatternInfo";
-import { ResultsSection } from "../components/ResultsSection";
-import { ScrapingTab } from "../components/ScrapingTab";
 import { extractAndConvertPattern } from "../lib/patternExtractor";
 import { ExtractedData, TwitterList } from "../lib/types";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"api" | "scraping" | "manual">(
+  const [activeTab, setActiveTab] = useState<"api" | "scraping" | "input">(
     "api"
   );
   const [inputData, setInputData] = useState("");
@@ -39,8 +28,8 @@ export default function Home() {
 
     // データ設定後に少し遅延してからタブを切り替え
     setTimeout(() => {
-      setActiveTab("manual");
-      console.log("手動入力タブに切り替えました");
+      setActiveTab("input");
+      console.log("データ入力タブに切り替えました");
     }, 100);
   };
 
@@ -134,50 +123,23 @@ export default function Home() {
                   <Tabs.Trigger value="scraping">
                     🕷️ スクレイピング
                   </Tabs.Trigger>
-                  <Tabs.Trigger value="manual">✋ 手動入力</Tabs.Trigger>
+                  <Tabs.Trigger value="input">✋ データ入力</Tabs.Trigger>
                 </Tabs.List>
-
                 <Tabs.Content value="api">
                   <ApiTab onDataFetched={handleDataFetched} />
                 </Tabs.Content>
                 <Tabs.Content value="scraping">
                   <ScrapingTab onDataFetched={handleDataFetched} />
                 </Tabs.Content>
-                <Tabs.Content value="manual">
-                  <VStack gap={4} align="stretch">
-                    <ManualTab
-                      inputData={inputData}
-                      onInputChange={setInputData}
-                    />
-                    <PatternInfo />
-                    {/* Action Buttons */}
-                    <HStack gap={4} w="full" justify="center">
-                      <Button
-                        size="lg"
-                        colorScheme="blue"
-                        onClick={processData}
-                      >
-                        🔍 パターン抽出処理
-                      </Button>
-                      <Button
-                        size="lg"
-                        colorScheme="red"
-                        variant="outline"
-                        onClick={clearAll}
-                      >
-                        🗑️ すべてクリア
-                      </Button>
-                    </HStack>
-                    {showResults && (
-                      <ResultsSection
-                        data={processedData}
-                        inputLineCount={
-                          inputData.split("\n").filter((line) => line.trim())
-                            .length
-                        }
-                      />
-                    )}
-                  </VStack>
+                <Tabs.Content value="input">
+                  <InputTab
+                    inputData={inputData}
+                    onInputChange={setInputData}
+                    processData={processData}
+                    clearAll={clearAll}
+                    showResults={showResults}
+                    data={processedData}
+                  />
                 </Tabs.Content>
               </Tabs.Root>
             </VStack>

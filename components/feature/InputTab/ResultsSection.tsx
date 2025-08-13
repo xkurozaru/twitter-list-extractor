@@ -1,4 +1,5 @@
 import { toaster } from "@/components/ui/toaster";
+import { ExtractedData } from "@/lib/types";
 import {
   Box,
   Button,
@@ -9,7 +10,6 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import React from "react";
-import { ExtractedData } from "../lib/types";
 
 interface ResultsSectionProps {
   data: ExtractedData[];
