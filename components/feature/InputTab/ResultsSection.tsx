@@ -3,9 +3,12 @@ import { ExtractedData } from "@/lib/types";
 import {
   Box,
   Button,
-  Code,
+  Flex,
   Heading,
+  IconButton,
+  Link,
   SimpleGrid,
+  Table,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -35,10 +38,42 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({
     });
     return csvContent;
   };
+
   function escapeCSVField(field: string): string {
     if (!field) return "";
     return field.replace(/"/g, '""');
   }
+
+  const copyToClipboard = async () => {
+    if (data.length === 0) {
+      toaster.create({
+        title: "データなし",
+        description: "まずデータを処理してください",
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      const csvContent = generateCSVContent();
+      await navigator.clipboard.writeText(csvContent);
+
+      toaster.create({
+        title: "コピー完了",
+        description: `CSV データをクリップボードにコピーしました (${data.length}件)`,
+        type: "success",
+        duration: 3000,
+      });
+    } catch {
+      toaster.create({
+        title: "コピー失敗",
+        description: "クリップボードへのコピーに失敗しました",
+        type: "error",
+        duration: 3000,
+      });
+    }
+  };
 
   const downloadCSV = () => {
     if (data.length === 0) {
@@ -125,21 +160,101 @@ export const ResultsSection: React.FC<ResultsSectionProps> = ({
       </Box>
 
       <Box bg="white" p={6} rounded="xl" border="1px" borderColor="gray.200">
-        <Heading size="sm" mb={4}>
-          CSV プレビュー
-        </Heading>
-        <Code
-          display="block"
-          whiteSpace="pre-wrap"
-          fontSize="sm"
-          bg="gray.50"
-          p={4}
-          rounded="md"
-          maxH="300px"
-          overflowY="auto"
-        >
-          {generateCSVContent()}
-        </Code>
+        <Flex justify="space-between" align="center" mb={4}>
+          <Heading size="sm">CSV プレビュー</Heading>
+          <IconButton
+            aria-label="CSVをクリップボードにコピー"
+            size="sm"
+            variant="ghost"
+            onClick={copyToClipboard}
+            disabled={data.length === 0}
+            _hover={{ bg: "gray.100" }}
+          >
+            <Text fontSize="lg">📋</Text>
+          </IconButton>
+        </Flex>
+        <Table.ScrollArea borderWidth="1px" rounded="md" height="400px">
+          <Table.Root size="sm" variant="outline" interactive>
+            <Table.Header bg="gray.100">
+              <Table.Row>
+                <Table.ColumnHeader fontWeight="bold" color="gray.700">
+                  日程
+                </Table.ColumnHeader>
+                <Table.ColumnHeader fontWeight="bold" color="gray.700">
+                  スペース
+                </Table.ColumnHeader>
+                <Table.ColumnHeader fontWeight="bold" color="gray.700">
+                  ペンネーム
+                </Table.ColumnHeader>
+                <Table.ColumnHeader fontWeight="bold" color="gray.700">
+                  Twitter
+                </Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {data.length === 0 ? (
+                <Table.Row>
+                  <Table.Cell
+                    colSpan={4}
+                    textAlign="center"
+                    color="gray.500"
+                    py={8}
+                  >
+                    データがありません
+                  </Table.Cell>
+                </Table.Row>
+              ) : (
+                data.map((item, index) => (
+                  <Table.Row key={index} _hover={{ bg: "gray.50" }}>
+                    <Table.Cell
+                      fontSize="sm"
+                      maxW="80px"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                    >
+                      {item.day || "-"}
+                    </Table.Cell>
+                    <Table.Cell
+                      fontSize="sm"
+                      maxW="80px"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                    >
+                      {item.extracted || "-"}
+                    </Table.Cell>
+                    <Table.Cell
+                      fontSize="sm"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                    >
+                      {item.displayName || "-"}
+                    </Table.Cell>
+                    <Table.Cell
+                      fontSize="sm"
+                      maxW="300px"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                    >
+                      {item.profileUrl ? (
+                        <Link
+                          href={item.profileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          color="blue.500"
+                          _hover={{ textDecoration: "underline" }}
+                        >
+                          {item.profileUrl}
+                        </Link>
+                      ) : (
+                        "-"
+                      )}
+                    </Table.Cell>
+                  </Table.Row>
+                ))
+              )}
+            </Table.Body>
+          </Table.Root>
+        </Table.ScrollArea>
       </Box>
     </VStack>
   );
