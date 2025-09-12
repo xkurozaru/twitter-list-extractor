@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import puppeteer from "puppeteer";
+import path from "path";
+import puppeteer, { Page } from "puppeteer";
 import { ApiResponse, TwitterList } from "../../lib/types";
 
 export default async function handler(
@@ -12,8 +13,13 @@ export default async function handler(
       .json({ success: false, error: "Method not allowed" });
   }
 
-  const { listUrl, maxMembers, username, password } = req.body;
-
+  const {
+    listUrl,
+    maxMembers,
+    username,
+    password,
+    persistSession = false,
+  } = req.body;
   if (!listUrl) {
     return res.status(400).json({
       success: false,
@@ -43,8 +49,11 @@ export default async function handler(
   try {
     console.log(`スクレイピング開始: ${listUrl}`);
 
+    // ユーザーデータディレクトリのパスを設定
+    const userDataDir = path.join(process.cwd(), ".puppeteer-data");
+
     // Puppeteerブラウザを起動
-    browser = await puppeteer.launch({
+    const browserOptions = {
       headless: process.env.NODE_ENV === "production",
       executablePath: "/usr/bin/google-chrome-stable",
       args: [
@@ -57,7 +66,17 @@ export default async function handler(
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
         "--lang=ja-JP,ja",
       ],
-    });
+      userDataDir: persistSession ? userDataDir : undefined,
+    };
+
+    // セッション永続化が有効な場合はログメッセージを表示
+    if (persistSession) {
+      console.log(
+        `セッション永続化が有効です。ユーザーデータディレクトリ: ${userDataDir}`
+      );
+    }
+
+    browser = await puppeteer.launch(browserOptions);
 
     const page = await browser.newPage();
 
@@ -69,7 +88,102 @@ export default async function handler(
 
     // ログイン処理
     if (username && password) {
-      console.log("認証情報が提供されています。ログインを試行中...");
+      console.log("認証情報が提供されています。ログイン状態をチェック中...");
+
+      // まずリストページに移動してログイン状態をチェック
+      try {
+        await page.goto(listUrl, {
+          waitUntil: "networkidle2",
+          timeout: 30000,
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // ログインが必要かどうかをチェック
+        const needsLogin = await page.evaluate(() => {
+          // ログインページにリダイレクトされているかチェック
+          const currentUrl = window.location.href;
+          if (
+            currentUrl.includes("/i/flow/login") ||
+            currentUrl.includes("/login")
+          ) {
+            return true;
+          }
+
+          // "ログイン"ボタンが表示されているかチェック
+          const loginButtons = document.querySelectorAll(
+            'a[href*="/login"], a[href*="/i/flow/login"]'
+          );
+          if (loginButtons.length > 0) {
+            return true;
+          }
+
+          // "このアカウントは非公開です"などのメッセージがあるかチェック
+          const protectedMessages = document.querySelectorAll("span, div");
+          for (const element of protectedMessages) {
+            const text = element.textContent?.toLowerCase() || "";
+            if (
+              text.includes("protected") ||
+              text.includes("private") ||
+              text.includes("非公開")
+            ) {
+              return true;
+            }
+          }
+
+          return false;
+        });
+
+        if (!needsLogin) {
+          console.log("既にログイン済みです。ログイン処理をスキップします。");
+        } else {
+          console.log("ログインが必要です。ログイン処理を開始します...");
+          try {
+            await performLogin(page, username, password);
+          } catch (loginError) {
+            console.error("ログインエラー:", loginError);
+            return res.status(401).json({
+              success: false,
+              error: `ログインに失敗しました: ${
+                loginError instanceof Error
+                  ? loginError.message
+                  : String(loginError)
+              }`,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("ログイン状態チェック中にエラーが発生しました:", error);
+        console.log("ログイン処理を実行します...");
+        try {
+          await performLogin(page, username, password);
+        } catch (loginError) {
+          console.error("ログインエラー:", loginError);
+          return res.status(401).json({
+            success: false,
+            error: `ログインに失敗しました: ${
+              loginError instanceof Error
+                ? loginError.message
+                : String(loginError)
+            }`,
+          });
+        }
+      }
+    } else {
+      // ログイン情報が提供されていない場合は直接リストページへ
+      await page.goto(listUrl, {
+        waitUntil: "networkidle2",
+        timeout: 30000,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+
+    // ログイン処理を別関数として定義
+    async function performLogin(
+      page: Page,
+      username: string,
+      password: string
+    ) {
       try {
         await page.goto("https://x.com/i/flow/login", {
           waitUntil: "networkidle2",
@@ -125,7 +239,7 @@ export default async function handler(
             const elements = await page.$$(selector);
             for (const element of elements) {
               const text = await page.evaluate(
-                (el) => el.textContent?.trim().toLowerCase(),
+                (el: Element) => el.textContent?.trim().toLowerCase(),
                 element
               );
               if (
@@ -186,7 +300,7 @@ export default async function handler(
           const loginButtons = await page.$$('div[role="button"], button');
           for (const button of loginButtons) {
             const text = await page.evaluate(
-              (el) => el.textContent?.trim().toLowerCase(),
+              (el: Element) => el.textContent?.trim().toLowerCase(),
               button
             );
             if (
@@ -223,24 +337,24 @@ export default async function handler(
         await new Promise((resolve) => setTimeout(resolve, 3000));
       } catch (loginError) {
         console.error("ログインエラー:", loginError);
-        return res.status(401).json({
-          success: false,
-          error: `ログインに失敗しました: ${
+        throw new Error(
+          `ログインに失敗しました: ${
             loginError instanceof Error
               ? loginError.message
               : String(loginError)
-          }`,
-        });
+          }`
+        );
       }
     }
 
-    // リストページに移動
-    await page.goto(listUrl, {
-      waitUntil: "networkidle2",
-      timeout: 30000,
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    // リストページに移動（ログインした場合は再度移動）
+    if (username && password) {
+      await page.goto(listUrl, {
+        waitUntil: "networkidle2",
+        timeout: 30000,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
 
     // リストのメンバーボタンを探してクリック
     console.log("リストページでメンバーボタンを探しています...");
@@ -349,16 +463,45 @@ export default async function handler(
               let displayName = "";
               let username = "";
 
-              // 表示名を取得
+              // 表示名を取得（絵文字imgタグを考慮）
               const nameLinks = userCell.querySelectorAll('a[href^="/"]');
               for (const link of nameLinks) {
-                const linkText = link.textContent?.trim() || "";
+                // 絵文字を含む完全な表示名を構築
+                let fullDisplayName = "";
+
+                // 再帰的に全ての子要素を処理して表示名を構築
+                function extractFullText(element: Node): string {
+                  let text = "";
+
+                  if (element.nodeType === Node.TEXT_NODE) {
+                    text += element.textContent || "";
+                  } else if (element.nodeType === Node.ELEMENT_NODE) {
+                    const el = element as Element;
+
+                    // img要素の場合はalt属性を使用
+                    if (el.tagName === "IMG") {
+                      text += el.getAttribute("alt") || "";
+                    } else {
+                      // その他の要素は子要素を再帰処理
+                      Array.from(el.childNodes).forEach((child) => {
+                        text += extractFullText(child);
+                      });
+                    }
+                  }
+
+                  return text;
+                }
+
+                // リンク要素全体から表示名を抽出
+                fullDisplayName = extractFullText(link).trim();
+
+                // ユーザー名パターン（@で始まり英数字とアンダースコアのみ）でない場合は表示名として扱う
                 if (
-                  linkText &&
-                  !linkText.startsWith("@") &&
-                  linkText.length > 0
+                  fullDisplayName &&
+                  fullDisplayName.length > 0 &&
+                  !fullDisplayName.match(/^@[a-zA-Z0-9_]+$/)
                 ) {
-                  displayName = linkText;
+                  displayName = fullDisplayName;
                   break;
                 }
               }
@@ -483,13 +626,43 @@ export default async function handler(
 
               const nameLinks = userCell.querySelectorAll('a[href^="/"]');
               for (const link of nameLinks) {
-                const linkText = link.textContent?.trim() || "";
+                // 絵文字を含む完全な表示名を構築
+                let fullDisplayName = "";
+
+                // 再帰的に全ての子要素を処理して表示名を構築
+                function extractFullText(element: Node): string {
+                  let text = "";
+
+                  if (element.nodeType === Node.TEXT_NODE) {
+                    text += element.textContent || "";
+                  } else if (element.nodeType === Node.ELEMENT_NODE) {
+                    const el = element as Element;
+
+                    // img要素の場合はalt属性を使用
+                    if (el.tagName === "IMG") {
+                      text += el.getAttribute("alt") || "";
+                    } else {
+                      // その他の要素は子要素を再帰処理
+                      Array.from(el.childNodes).forEach((child) => {
+                        text += extractFullText(child);
+                      });
+                    }
+                  }
+
+                  return text;
+                }
+
+                // リンク要素全体から表示名を抽出
+                fullDisplayName = extractFullText(link).trim();
+
+                // ユーザー名パターン（@で始まり英数字とアンダースコアのみ）でない場合は表示名として扱う
                 if (
-                  linkText &&
-                  !linkText.startsWith("@") &&
-                  linkText.length > 0
+                  fullDisplayName &&
+                  fullDisplayName.length > 0 &&
+                  !fullDisplayName.match(/^@[a-zA-Z0-9_]+$/)
                 ) {
-                  displayName = linkText;
+                  // 絵文字を含む完全な表示名を使用
+                  displayName = fullDisplayName;
                   break;
                 }
               }
@@ -535,8 +708,10 @@ export default async function handler(
         const uniqueNewMembers = newMembers.filter(
           (m: TwitterList) => !existingUsernames.has(m.username)
         );
-        allMembers.push(...uniqueNewMembers);
 
+        uniqueNewMembers.forEach((member: TwitterList) => {
+          allMembers.push(member);
+        });
         console.log(
           `新たに ${uniqueNewMembers.length}人を追加。合計: ${allMembers.length}人`
         );

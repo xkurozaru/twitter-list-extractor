@@ -15,6 +15,7 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [useLogin, setUseLogin] = useState(false);
+  const [persistSession, setPersistSession] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleFetch = async () => {
@@ -52,6 +53,7 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
           maxMembers,
           username: useLogin ? username : undefined,
           password: useLogin ? password : undefined,
+          persistSession,
         }),
       });
 
@@ -102,6 +104,8 @@ export const ScrapingTab: React.FC<ScrapingTabProps> = ({ onDataFetched }) => {
         setPassword={setPassword}
         useLogin={useLogin}
         setUseLogin={setUseLogin}
+        persistSession={persistSession}
+        setPersistSession={setPersistSession}
       />
 
       <Button

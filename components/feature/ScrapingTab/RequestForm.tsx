@@ -12,6 +12,8 @@ interface RequestFormProps {
   setPassword: (pass: string) => void;
   useLogin: boolean;
   setUseLogin: (login: boolean) => void;
+  persistSession: boolean;
+  setPersistSession: (persist: boolean) => void;
 }
 
 export const RequestForm: React.FC<RequestFormProps> = ({
@@ -25,6 +27,8 @@ export const RequestForm: React.FC<RequestFormProps> = ({
   setPassword,
   useLogin,
   setUseLogin,
+  persistSession,
+  setPersistSession,
 }) => {
   return (
     <Box bg="gray.50" p={6} rounded="xl">
@@ -70,6 +74,20 @@ export const RequestForm: React.FC<RequestFormProps> = ({
           </Checkbox.Root>
           <Text fontSize="sm" color="gray.600" mt={1}>
             認証情報はスクレイピング処理中のみ使用され、保存されません。
+          </Text>
+        </Box>
+
+        <Box w="full">
+          <Checkbox.Root
+            checked={persistSession}
+            onCheckedChange={(e) => setPersistSession(!!e.checked)}
+          >
+            <Checkbox.HiddenInput />
+            <Checkbox.Control colorPalette="green" />
+            <Checkbox.Label>ログイン状態を保存する (推奨)</Checkbox.Label>
+          </Checkbox.Root>
+          <Text fontSize="sm" color="gray.600" mt={1}>
+            毎回ログインする必要がなくなり、Twitter通知も減ります。
           </Text>
         </Box>
 
