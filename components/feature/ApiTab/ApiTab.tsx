@@ -11,7 +11,9 @@ interface ApiTabProps {
 }
 
 export const ApiTab: React.FC<ApiTabProps> = ({ onDataFetched }) => {
-  const [bearerToken, setBearerToken] = useState("");
+  const [bearerToken, setBearerToken] = useState(
+    process.env.NEXT_PUBLIC_TWITTER_BEARER_TOKEN || ""
+  );
   const [listId, setListId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("取得中...");
