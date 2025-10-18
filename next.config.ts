@@ -2,8 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   webpack: (config) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (config.resolve.alias as any).canvas = false;
+    // Disable canvas module for pdf-lib compatibility
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
     return config;
   },
 };
