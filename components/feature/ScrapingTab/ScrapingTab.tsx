@@ -2,7 +2,7 @@ import { toaster } from "@/components/ui/toaster";
 import { TwitterList } from "@/lib/types";
 import { Button, HStack, Spinner, Text, VStack } from "@chakra-ui/react";
 import React, { useState } from "react";
-import { Instructions } from "./Instractions";
+import { Instructions } from "./Instructions";
 import { RequestForm } from "./RequestForm";
 
 interface ScrapingTabProps {
