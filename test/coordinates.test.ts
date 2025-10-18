@@ -66,4 +66,23 @@ describe("Coordinate Calculation for 南12 blocks", () => {
       }
     });
   });
+
+  test("南2 blocks should start from top of 南2 area (not continue from 南1)", () => {
+    // 南1の最後のブロック (j)
+    const space1j = parseLocation("南1-j-01a");
+    const coords1j = calculateCoordinates(space1j!);
+    
+    // 南2の最初のブロック (k)
+    const space2k = parseLocation("南2-k-01a");
+    const coords2k = calculateCoordinates(space2k!);
+    
+    // 南2-k は南2の開始位置 (startY=400) から始まるべき
+    expect(coords2k.y).toBe(400);
+    
+    // 南2-k は南1-j より低い位置にあるべき（南2は下部）
+    expect(coords2k.y).toBeGreaterThan(coords1j.y);
+    
+    // 南2-k は左端 (startX=60) から始まるべき
+    expect(coords2k.x).toBe(60);
+  });
 });

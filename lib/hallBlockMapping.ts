@@ -206,7 +206,7 @@ export function inferHallFromBlock(block: string): {
  */
 function normalizeBlock(block: string): string {
   // 全角英字を半角に変換
-  let normalized = block.replace(/[Ａ-Ｚａ-ｚ]/g, (s) => {
+  const normalized = block.replace(/[Ａ-Ｚａ-ｚ]/g, (s) => {
     return String.fromCharCode(s.charCodeAt(0) - 0xfee0);
   });
 
