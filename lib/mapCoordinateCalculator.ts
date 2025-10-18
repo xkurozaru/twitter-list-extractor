@@ -33,112 +33,153 @@ export function parseLocation(location: string): MapSpace | null {
  *
  * コミケPDFマップの実際の構造に基づいた座標計算
  * PDFサイズ: B4横 (約1031 x 728pt)
- * マップは複数のブロックがグリッド状に配置されている
+ * 各ホールごとに異なる配置パターンを考慮
  */
 export function calculateCoordinates(
   space: MapSpace,
   pdfWidth: number = 1031.81,
   pdfHeight: number = 728.504
 ): MapCoordinates {
-  // PDFマップの余白とレイアウト定数
-  const MARGIN_LEFT = 50;
-  const MARGIN_TOP = 50;
-  const MARGIN_BOTTOM = 50;
-
-  // 利用可能な描画領域
-  const usableWidth = pdfWidth - MARGIN_LEFT * 2;
-  const usableHeight = pdfHeight - MARGIN_TOP - MARGIN_BOTTOM;
-
-  // ブロックとスペースの基本サイズ
-  const SPACE_WIDTH = 8; // 1スペースの幅（pt）
-  const SPACE_HEIGHT = 8; // 1スペースの高さ（pt）
-  const BLOCK_GAP = 15; // ブロック間の間隔
-
-  // 1ブロックあたりの列数と行数（典型的なコミケ配置）
-  const SPACES_PER_ROW = 30; // 横に並ぶスペース数
-  const ROWS_PER_BLOCK = 10; // ブロック内の行数
+  // ホールごとの設定を定義
+  const hallConfigs = getHallConfig(space.area, space.hall);
 
   // ブロック文字をインデックスに変換
-  let blockIndex = 0;
-  const blockChar = space.block;
+  const blockIndex = getBlockIndex(space.block);
 
-  // 英字小文字 (a-z)
-  if (blockChar >= "a" && blockChar <= "z") {
-    blockIndex = blockChar.charCodeAt(0) - "a".charCodeAt(0);
-  }
-  // 英字大文字 (A-Z)
-  else if (blockChar >= "A" && blockChar <= "Z") {
-    blockIndex = blockChar.charCodeAt(0) - "A".charCodeAt(0);
-  }
-  // ひらがな (あ-ん)
-  else if (blockChar >= "あ" && blockChar <= "ん") {
-    blockIndex = blockChar.charCodeAt(0) - "あ".charCodeAt(0);
-  }
-  // カタカナ (ア-ン)
-  else if (blockChar >= "ア" && blockChar <= "ン") {
-    blockIndex = blockChar.charCodeAt(0) - "ア".charCodeAt(0);
-  }
-
-  // ホール番号によるY座標オフセット
-  const hallNum = parseInt(space.hall, 10);
-  let hallYOffset = 0;
-
-  // 南・西・東で異なる配置になる可能性を考慮
-  if (space.area === "南") {
-    // 南1,2ホール: 1ページに2ホール分
-    hallYOffset = (hallNum - 1) * (usableHeight / 2);
-  } else if (space.area === "西") {
-    // 西1,2ホール: 1ページに2ホール分
-    hallYOffset = (hallNum - 1) * (usableHeight / 2);
-  } else if (space.area === "東") {
-    if (hallNum === 7) {
-      // 東7ホール: 1ページ全体
-      hallYOffset = 0;
-    } else {
-      // 東456ホール: 1ページに3ホール分
-      hallYOffset = (hallNum - 4) * (usableHeight / 3);
-    }
-  }
-
-  // ブロックの配置（横方向）
-  // 通常、ブロックは横に並んで配置される（4〜5ブロックごとに改行）
-  const BLOCKS_PER_ROW_COUNT = 5;
-  const blockRow = Math.floor(blockIndex / BLOCKS_PER_ROW_COUNT);
-  const blockCol = blockIndex % BLOCKS_PER_ROW_COUNT;
-
-  const blockWidth = SPACE_WIDTH * SPACES_PER_ROW + BLOCK_GAP;
-  const blockHeight = SPACE_HEIGHT * ROWS_PER_BLOCK + BLOCK_GAP;
+  // ブロックのグリッド位置を計算
+  const blockRow = Math.floor(blockIndex / hallConfigs.blocksPerRow);
+  const blockCol = blockIndex % hallConfigs.blocksPerRow;
 
   // スペース番号から位置を計算
   const spaceNum = parseInt(space.spaceNumber, 10);
-  const spaceRow = Math.floor((spaceNum - 1) / SPACES_PER_ROW);
-  const spaceCol = (spaceNum - 1) % SPACES_PER_ROW;
+  const spaceRow = Math.floor((spaceNum - 1) / hallConfigs.spacesPerRow);
+  const spaceCol = (spaceNum - 1) % hallConfigs.spacesPerRow;
 
-  // 最終座標を計算
-  let x = MARGIN_LEFT + blockCol * blockWidth + spaceCol * SPACE_WIDTH;
+  // 基準座標を計算
+  let x =
+    hallConfigs.startX +
+    blockCol * (hallConfigs.blockWidth + hallConfigs.blockGapX) +
+    spaceCol * hallConfigs.spaceWidth;
 
   const y =
-    MARGIN_TOP + hallYOffset + blockRow * blockHeight + spaceRow * SPACE_HEIGHT;
+    hallConfigs.startY +
+    blockRow * (hallConfigs.blockHeight + hallConfigs.blockGapY) +
+    spaceRow * hallConfigs.spaceHeight;
 
   // 位置(a/b/ab)に応じて幅と座標を調整
-  let width = SPACE_WIDTH;
+  let width = hallConfigs.spaceWidth;
 
   if (space.position === "a") {
     // 左半分
-    width = SPACE_WIDTH / 2;
+    width = hallConfigs.spaceWidth / 2;
   } else if (space.position === "b") {
     // 右半分
-    width = SPACE_WIDTH / 2;
-    x += width; // 右半分なので幅の半分だけX座標をずらす
+    width = hallConfigs.spaceWidth / 2;
+    x += width;
   }
-  // position === 'ab' の場合は全体なので width はそのまま
 
   return {
     x,
     y,
     width,
-    height: SPACE_HEIGHT,
+    height: hallConfigs.spaceHeight,
   };
+}
+
+/**
+ * ブロック文字をインデックスに変換
+ */
+function getBlockIndex(blockChar: string): number {
+  // 英字小文字 (a-z)
+  if (blockChar >= "a" && blockChar <= "z") {
+    return blockChar.charCodeAt(0) - "a".charCodeAt(0);
+  }
+  // 英字大文字 (A-Z)
+  if (blockChar >= "A" && blockChar <= "Z") {
+    return blockChar.charCodeAt(0) - "A".charCodeAt(0);
+  }
+  // ひらがな (あ-ん)
+  if (blockChar >= "あ" && blockChar <= "ん") {
+    return blockChar.charCodeAt(0) - "あ".charCodeAt(0);
+  }
+  // カタカナ (ア-ン)
+  if (blockChar >= "ア" && blockChar <= "ン") {
+    return blockChar.charCodeAt(0) - "ア".charCodeAt(0);
+  }
+  return 0;
+}
+
+/**
+ * ホールごとの配置設定を取得
+ *
+ * 注意: これらの値は実際のPDFに合わせて調整が必要です
+ * PDFのPNG画像を確認して、各値を微調整してください
+ */
+function getHallConfig(area: string, hall: string) {
+  const hallKey = `${area}${hall}`;
+
+  // B4サイズ (1031.81 x 728.504 pt)
+
+  // デフォルト設定（南12ホール用の仮設定）
+  const defaultConfig = {
+    startX: 60, // 左マージン
+    startY: 80, // 上マージン
+    spaceWidth: 6, // 1スペースの幅
+    spaceHeight: 6, // 1スペースの高さ
+    blockWidth: 180, // 1ブロックの幅
+    blockHeight: 60, // 1ブロックの高さ
+    blockGapX: 20, // ブロック間の横間隔
+    blockGapY: 20, // ブロック間の縦間隔
+    blocksPerRow: 5, // 1行あたりのブロック数
+    spacesPerRow: 30, // 1ブロック内の1行あたりのスペース数
+  };
+
+  // ホールごとの個別設定
+  const configs: Record<string, typeof defaultConfig> = {
+    // 南1・2ホール (a-t ブロック)
+    南1: {
+      ...defaultConfig,
+      startY: 80, // 南1は上部
+    },
+    南2: {
+      ...defaultConfig,
+      startY: 400, // 南2は下部
+    },
+
+    // 西1・2ホール (あ-め ブロック)
+    西1: {
+      ...defaultConfig,
+      startY: 80,
+      // ひらがなブロックの配置は異なる可能性あり
+    },
+    西2: {
+      ...defaultConfig,
+      startY: 400,
+    },
+
+    // 東7ホール (A-W ブロック)
+    東7: {
+      ...defaultConfig,
+      startY: 80,
+      // 東7は1ページ全体を使用
+    },
+
+    // 東4・5・6ホール (ア-ヨ ブロック)
+    東4: {
+      ...defaultConfig,
+      startY: 80, // 上部
+    },
+    東5: {
+      ...defaultConfig,
+      startY: 300, // 中部
+    },
+    東6: {
+      ...defaultConfig,
+      startY: 520, // 下部
+    },
+  };
+
+  return configs[hallKey] || defaultConfig;
 }
 
 /**

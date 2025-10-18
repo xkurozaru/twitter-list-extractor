@@ -20,18 +20,22 @@ const DEFAULT_COLOR: ColorConfig = {
  * @param pdfPath PDFファイルのパス（ブラウザの場合はURL）
  * @param locations 色付けする配置場所の配列（例: ["西1-a-01a", "東2-b-05b"]）
  * @param color 色の設定（デフォルト: 黄色、半透明）
+ * @param debugMode デバッグモード（trueの場合、より大きく目立つマーカーを描画）
  * @returns 色付けされたPDFのUint8Array
  */
 export async function colorizeMap(
   pdfBytes: Uint8Array | ArrayBuffer,
   locations: string[],
-  color: ColorConfig = DEFAULT_COLOR
+  color: ColorConfig = DEFAULT_COLOR,
+  debugMode: boolean = true // デフォルトでデバッグモードON
 ): Promise<Uint8Array> {
   // PDFを読み込む
   const pdfDoc = await PDFDocument.load(pdfBytes);
   const pages = pdfDoc.getPages();
   const firstPage = pages[0];
   const { width, height } = firstPage.getSize();
+
+  console.log(`[PDF Info] Size: ${width} x ${height} pt`);
 
   // 各配置場所を色付け
   for (const location of locations) {
@@ -53,17 +57,43 @@ export async function colorizeMap(
     // PDF座標系は下から上なので、Y座標を反転
     const pdfY = height - coords.y - coords.height;
 
-    // 矩形を描画
-    firstPage.drawRectangle({
-      x: coords.x,
-      y: pdfY,
-      width: coords.width,
-      height: coords.height,
-      color: rgb(color.r, color.g, color.b),
-      opacity: color.opacity || 0.5,
-      borderColor: rgb(color.r * 0.8, color.g * 0.8, color.b * 0.8),
-      borderWidth: 1,
-    });
+    if (debugMode) {
+      // デバッグモード: より大きく目立つマーカーを描画
+      const debugSize = 20; // デバッグ用の大きなマーカー
+      firstPage.drawRectangle({
+        x: coords.x - 5,
+        y: pdfY - 5,
+        width: debugSize,
+        height: debugSize,
+        color: rgb(1, 0, 0), // 赤色
+        opacity: 0.7,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 2,
+      });
+
+      // 座標情報をテキストで表示
+      firstPage.drawText(
+        `${space.block}${space.spaceNumber}${space.position}`,
+        {
+          x: coords.x + debugSize + 2,
+          y: pdfY,
+          size: 8,
+          color: rgb(0, 0, 0),
+        }
+      );
+    } else {
+      // 通常モード: 実際のスペースサイズで描画
+      firstPage.drawRectangle({
+        x: coords.x,
+        y: pdfY,
+        width: coords.width,
+        height: coords.height,
+        color: rgb(color.r, color.g, color.b),
+        opacity: color.opacity || 0.5,
+        borderColor: rgb(color.r * 0.8, color.g * 0.8, color.b * 0.8),
+        borderWidth: 1,
+      });
+    }
   }
 
   // PDFをバイト配列として保存
