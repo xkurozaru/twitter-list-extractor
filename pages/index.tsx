@@ -1,6 +1,7 @@
 import { ApiTab } from "@/components/feature/ApiTab";
 import { IndexHeader } from "@/components/feature/Headers";
 import { InputTab } from "@/components/feature/InputTab";
+import { MapTab } from "@/components/feature/MapTab";
 import { ScrapingTab } from "@/components/feature/ScrapingTab";
 import { toaster } from "@/components/ui/toaster";
 import { Box, Container, Tabs, VStack } from "@chakra-ui/react";
@@ -9,9 +10,9 @@ import { extractAndConvertPattern } from "../lib/patternExtractor";
 import { ExtractedData, TwitterList } from "../lib/types";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"api" | "scraping" | "input">(
-    "api"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "api" | "scraping" | "input" | "map"
+  >("api");
   const [inputData, setInputData] = useState("");
   const [processedData, setProcessedData] = useState<ExtractedData[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -100,13 +101,14 @@ export default function Home() {
               value={activeTab}
               w="full"
               onValueChange={(e) =>
-                setActiveTab(e.value as "api" | "scraping" | "input")
+                setActiveTab(e.value as "api" | "scraping" | "input" | "map")
               }
             >
               <Tabs.List>
                 <Tabs.Trigger value="api">🔑 API取得</Tabs.Trigger>
                 <Tabs.Trigger value="scraping">🕷️ スクレイピング</Tabs.Trigger>
                 <Tabs.Trigger value="input">✋ データ入力</Tabs.Trigger>
+                <Tabs.Trigger value="map">🗺️ Map色付け</Tabs.Trigger>
               </Tabs.List>
               <Tabs.Content value="api">
                 <ApiTab onDataFetched={handleDataFetched} />
@@ -123,6 +125,9 @@ export default function Home() {
                   showResults={showResults}
                   data={processedData}
                 />
+              </Tabs.Content>
+              <Tabs.Content value="map">
+                <MapTab locations={processedData.map((d) => d.extracted)} />
               </Tabs.Content>
             </Tabs.Root>
           </Box>
