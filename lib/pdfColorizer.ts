@@ -43,6 +43,13 @@ export async function colorizeMap(
 
     const coords = calculateCoordinates(space, width, height);
 
+    // デバッグ用ログ
+    console.log(`[Colorize] ${location}:`, {
+      space,
+      pdfSize: { width, height },
+      coords,
+    });
+
     // PDF座標系は下から上なので、Y座標を反転
     const pdfY = height - coords.y - coords.height;
 

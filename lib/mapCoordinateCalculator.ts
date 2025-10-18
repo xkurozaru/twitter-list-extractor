@@ -2,11 +2,14 @@ import { MapCoordinates, MapSpace } from "./types";
 
 /**
  * コミケ配置場所文字列をパースしてMapSpaceオブジェクトに変換
- * 例: "西1-a-01a" -> { area: "西", hall: "1", block: "a", spaceNumber: "01", position: "a" }
+ * 例: "西1-あ-01a" -> { area: "西", hall: "1", block: "あ", spaceNumber: "01", position: "a" }
+ * 例: "南1-a-01a" -> { area: "南", hall: "1", block: "a", spaceNumber: "01", position: "a" }
+ * 例: "東7-A-01a" -> { area: "東", hall: "7", block: "A", spaceNumber: "01", position: "a" }
  */
 export function parseLocation(location: string): MapSpace | null {
-  // パターン: エリア(東/西) + ホール番号 + "-" + ブロック + "-" + スペース番号 + 位置(a/b/ab)
-  const pattern = /^([東西])(\d+)-([a-z])-(\d+)(a|b|ab)$/;
+  // パターン: エリア(東/西/南) + ホール番号 + "-" + ブロック + "-" + スペース番号 + 位置(a/b/ab)
+  // ブロックは英字（大文字小文字）、ひらがな、カタカナに対応
+  const pattern = /^([東西南])(\d+)-([a-zA-Zあ-んア-ン])-(\d+)(a|b|ab)$/;
   const match = location.match(pattern);
 
   if (!match) {
@@ -28,70 +31,104 @@ export function parseLocation(location: string): MapSpace | null {
 /**
  * MapSpaceからPDF上の座標を計算
  *
- * この関数は実際のPDFマップの構造に基づいて調整が必要です。
- * 現在は仮の実装で、実際の座標マッピングには
- * PDFの実際のレイアウトを分析して定数を調整する必要があります。
+ * コミケPDFマップの実際の構造に基づいた座標計算
+ * PDFサイズ: B4横 (約1031 x 728pt)
+ * マップは複数のブロックがグリッド状に配置されている
  */
 export function calculateCoordinates(
   space: MapSpace,
   pdfWidth: number = 1031.81,
-  _pdfHeight: number = 728.504
+  pdfHeight: number = 728.504
 ): MapCoordinates {
-  // 基準座標とスペースサイズ（実際のPDFに合わせて調整が必要）
-  const baseConfig = {
-    // エリアごとの開始X座標
-    areaStartX: {
-      西: 50,
-      東: pdfWidth / 2 + 50,
-    },
-    // ホールごとのY座標オフセット
-    hallOffsetY: {
-      "1": 100,
-      "2": 250,
-      "3": 400,
-    },
-    // ブロックごとのX座標オフセット（a, b, c...）
-    blockOffsetX: 30,
-    // スペースのサイズ
-    spaceWidth: 20,
-    spaceHeight: 15,
-    // スペース間の間隔
-    spaceGap: 2,
-  };
+  // PDFマップの余白とレイアウト定数
+  const MARGIN_LEFT = 50;
+  const MARGIN_TOP = 50;
+  const MARGIN_BOTTOM = 50;
 
-  // エリアの基準X座標
-  const areaX =
-    baseConfig.areaStartX[space.area as keyof typeof baseConfig.areaStartX] ||
-    50;
+  // 利用可能な描画領域
+  const usableWidth = pdfWidth - MARGIN_LEFT * 2;
+  const usableHeight = pdfHeight - MARGIN_TOP - MARGIN_BOTTOM;
 
-  // ホールのY座標オフセット
-  const hallY =
-    baseConfig.hallOffsetY[space.hall as keyof typeof baseConfig.hallOffsetY] ||
-    100;
+  // ブロックとスペースの基本サイズ
+  const SPACE_WIDTH = 8; // 1スペースの幅（pt）
+  const SPACE_HEIGHT = 8; // 1スペースの高さ（pt）
+  const BLOCK_GAP = 15; // ブロック間の間隔
 
-  // ブロック文字をインデックスに変換 (a=0, b=1, c=2...)
-  const blockIndex = space.block.charCodeAt(0) - "a".charCodeAt(0);
-  const blockX = blockIndex * baseConfig.blockOffsetX;
+  // 1ブロックあたりの列数と行数（典型的なコミケ配置）
+  const SPACES_PER_ROW = 30; // 横に並ぶスペース数
+  const ROWS_PER_BLOCK = 10; // ブロック内の行数
 
-  // スペース番号から行位置を計算
+  // ブロック文字をインデックスに変換
+  let blockIndex = 0;
+  const blockChar = space.block;
+
+  // 英字小文字 (a-z)
+  if (blockChar >= "a" && blockChar <= "z") {
+    blockIndex = blockChar.charCodeAt(0) - "a".charCodeAt(0);
+  }
+  // 英字大文字 (A-Z)
+  else if (blockChar >= "A" && blockChar <= "Z") {
+    blockIndex = blockChar.charCodeAt(0) - "A".charCodeAt(0);
+  }
+  // ひらがな (あ-ん)
+  else if (blockChar >= "あ" && blockChar <= "ん") {
+    blockIndex = blockChar.charCodeAt(0) - "あ".charCodeAt(0);
+  }
+  // カタカナ (ア-ン)
+  else if (blockChar >= "ア" && blockChar <= "ン") {
+    blockIndex = blockChar.charCodeAt(0) - "ア".charCodeAt(0);
+  }
+
+  // ホール番号によるY座標オフセット
+  const hallNum = parseInt(space.hall, 10);
+  let hallYOffset = 0;
+
+  // 南・西・東で異なる配置になる可能性を考慮
+  if (space.area === "南") {
+    // 南1,2ホール: 1ページに2ホール分
+    hallYOffset = (hallNum - 1) * (usableHeight / 2);
+  } else if (space.area === "西") {
+    // 西1,2ホール: 1ページに2ホール分
+    hallYOffset = (hallNum - 1) * (usableHeight / 2);
+  } else if (space.area === "東") {
+    if (hallNum === 7) {
+      // 東7ホール: 1ページ全体
+      hallYOffset = 0;
+    } else {
+      // 東456ホール: 1ページに3ホール分
+      hallYOffset = (hallNum - 4) * (usableHeight / 3);
+    }
+  }
+
+  // ブロックの配置（横方向）
+  // 通常、ブロックは横に並んで配置される（4〜5ブロックごとに改行）
+  const BLOCKS_PER_ROW_COUNT = 5;
+  const blockRow = Math.floor(blockIndex / BLOCKS_PER_ROW_COUNT);
+  const blockCol = blockIndex % BLOCKS_PER_ROW_COUNT;
+
+  const blockWidth = SPACE_WIDTH * SPACES_PER_ROW + BLOCK_GAP;
+  const blockHeight = SPACE_HEIGHT * ROWS_PER_BLOCK + BLOCK_GAP;
+
+  // スペース番号から位置を計算
   const spaceNum = parseInt(space.spaceNumber, 10);
-  const rowOffset = Math.floor((spaceNum - 1) / 10); // 10スペースごとに改行
-  const colOffset = (spaceNum - 1) % 10;
+  const spaceRow = Math.floor((spaceNum - 1) / SPACES_PER_ROW);
+  const spaceCol = (spaceNum - 1) % SPACES_PER_ROW;
 
-  // 最終的な座標を計算
-  let x =
-    areaX + blockX + colOffset * (baseConfig.spaceWidth + baseConfig.spaceGap);
-  const y = hallY + rowOffset * (baseConfig.spaceHeight + baseConfig.spaceGap);
+  // 最終座標を計算
+  let x = MARGIN_LEFT + blockCol * blockWidth + spaceCol * SPACE_WIDTH;
+
+  const y =
+    MARGIN_TOP + hallYOffset + blockRow * blockHeight + spaceRow * SPACE_HEIGHT;
 
   // 位置(a/b/ab)に応じて幅と座標を調整
-  let width = baseConfig.spaceWidth;
+  let width = SPACE_WIDTH;
 
   if (space.position === "a") {
     // 左半分
-    width = baseConfig.spaceWidth / 2;
+    width = SPACE_WIDTH / 2;
   } else if (space.position === "b") {
     // 右半分
-    width = baseConfig.spaceWidth / 2;
+    width = SPACE_WIDTH / 2;
     x += width; // 右半分なので幅の半分だけX座標をずらす
   }
   // position === 'ab' の場合は全体なので width はそのまま
@@ -100,7 +137,7 @@ export function calculateCoordinates(
     x,
     y,
     width,
-    height: baseConfig.spaceHeight,
+    height: SPACE_HEIGHT,
   };
 }
 

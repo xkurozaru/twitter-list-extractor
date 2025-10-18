@@ -35,9 +35,6 @@ importers:
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
-      pdfjs-dist:
-        specifier: ^5.4.296
-        version: 5.4.296
       puppeteer:
         specifier: ^24.16.1
         version: 24.25.0(typescript@5.9.3)
@@ -47,9 +44,6 @@ importers:
       react-dom:
         specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
-      react-pdf:
-        specifier: ^10.2.0
-        version: 10.2.0(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3
