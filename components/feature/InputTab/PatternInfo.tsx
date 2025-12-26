@@ -21,7 +21,6 @@ export const PatternInfo: React.FC = () => {
               <Text>• 東モ23b → モ23b</Text>
               <Text>• 南&quot;ｓ&quot;05a → s05a</Text>
               <Text>• 7Q-05b → Q05b</Text>
-              <Text>• R45b → R45b</Text>
             </Box>
           </Box>
 
@@ -34,7 +33,6 @@ export const PatternInfo: React.FC = () => {
               <Text>• 日曜、日曜日 → 2日目</Text>
               <Text>• 1日目、一日目 → 1日目</Text>
               <Text>• 2日目、二日目 → 2日目</Text>
-              <Text>• 両方含む場合 → 両日</Text>
             </Box>
           </Box>
         </HStack>

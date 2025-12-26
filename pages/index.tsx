@@ -54,7 +54,7 @@ export default function Home() {
         const displayName = parts[0];
         const profileUrl = `https://x.com/${parts[1]}`;
 
-        const matches = extractAndConvertPattern(displayName);
+        const matches = extractAndConvertPattern(displayName, "C107");
 
         // マッチした場合はそれぞれのマッチを追加
         if (matches.length > 0) {
