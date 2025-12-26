@@ -440,7 +440,7 @@ export default async function handler(
       const collectedUsernames = new Set<string>();
       let previousUserCount = 0;
       let stableCount = 0;
-      const maxStableIterations = 3;
+      const maxStableIterations = 10; // 3から10に増加
 
       while (stableCount < maxStableIterations) {
         // 現在のユーザー数を取得
@@ -563,9 +563,18 @@ export default async function handler(
         // ユーザー数が変わらない場合はカウンターを増加
         if (currentUserCount === previousUserCount) {
           stableCount++;
+          console.log(
+            `ユーザー数が変化なし (${stableCount}/${maxStableIterations})`
+          );
         } else {
           stableCount = 0;
           previousUserCount = currentUserCount;
+        }
+
+        // 最大取得数に達した場合は終了
+        if (maxMembers > 0 && allMembers.length >= maxMembers) {
+          console.log(`最大取得数 ${maxMembers}人に達しました`);
+          break;
         }
 
         // モーダル内でスクロール
@@ -587,10 +596,12 @@ export default async function handler(
             }
           });
 
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          // スクロール後の待機時間を長くする
+          await new Promise((resolve) => setTimeout(resolve, 2500));
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // 追加の待機時間
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       console.log(
